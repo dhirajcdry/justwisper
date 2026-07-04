@@ -43,7 +43,7 @@ enum Screen: String, CaseIterable {
     var blurb: String {
         switch self {
         case .insights: return "Deeper analytics on your dictation — words over time, speed trends, and where you dictate most."
-        case .dictionary: return "Teach Wispr your names, jargon, and custom spellings so transcription gets them right."
+        case .dictionary: return "Teach Wisper your names, jargon, and custom spellings so transcription gets them right."
         case .snippets: return "Save phrases you say often and expand them into longer text on command."
         default: return "Coming soon."
         }
@@ -734,7 +734,7 @@ final class AppModel: ObservableObject {
     private func paste(_ text: String) -> String? {
         refreshAccessibility(prompt: false)
         if !accessibilityGranted {
-            log("Skipped paste — Accessibility not granted. Enable Wispr in System Settings ▸ Privacy & Security ▸ Accessibility.")
+            log("Skipped paste — Accessibility not granted. Enable Wisper in System Settings ▸ Privacy & Security ▸ Accessibility.")
             return nil
         }
         let target = focus.lastExternalApp

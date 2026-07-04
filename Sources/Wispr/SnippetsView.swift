@@ -22,7 +22,7 @@ struct SnippetsView: View {
                             model.snippets.insert(SnippetEntry(trigger: "", expansion: ""), at: 0)
                         }
                     }
-                    Text("Say a short trigger and Wispr expands it into the full text — signatures, addresses, boilerplate. Expansions can span multiple lines.")
+                    Text("Say a short trigger and Wisper expands it into the full text — signatures, addresses, boilerplate. Expansions can span multiple lines.")
                         .font(F.regular(14)).foregroundStyle(c.ink2)
                         .frame(maxWidth: 560, alignment: .leading)
 

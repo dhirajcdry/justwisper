@@ -30,7 +30,7 @@ struct SettingsView: View {
                             toggle($model.soundCues, c)
                         }
                         divider(c)
-                        settingRow("Launch at login", "Start Wispr automatically", c) {
+                        settingRow("Launch at login", "Start Wisper automatically", c) {
                             toggle(Binding(get: { model.launchAtLogin },
                                            set: { model.setLaunchAtLogin($0) }), c)
                         }

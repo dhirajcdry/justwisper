@@ -9,7 +9,7 @@ struct WisprApp: App {
     }
 
     var body: some Scene {
-        Window("Wispr", id: "main") {
+        Window("Wisper", id: "main") {
             ContentView(model: model)
         }
         .windowStyle(.hiddenTitleBar)
@@ -21,12 +21,12 @@ struct WisprApp: App {
                 Button("Retry model load") { model.retryModelLoad() }
             }
             Divider()
-            Button("Show Wispr") {
+            Button("Show Wisper") {
                 NSApp.activate(ignoringOtherApps: true)
                 NSApp.windows.first?.makeKeyAndOrderFront(nil)
             }
             Divider()
-            Button("Quit Wispr") { NSApplication.shared.terminate(nil) }
+            Button("Quit Wisper") { NSApplication.shared.terminate(nil) }
         } label: {
             Image(nsImage: model.statusIcon)
         }

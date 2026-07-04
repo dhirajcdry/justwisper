@@ -15,7 +15,7 @@ struct OnboardingView: View {
             VStack(alignment: .leading, spacing: 26) {
                 VStack(alignment: .leading, spacing: 10) {
                     Eyebrow(text: "PRIVATE · ON-DEVICE", color: c.sig)
-                    Text("Welcome to\nWispr.")
+                    Text("Welcome to\nWisper.")
                         .font(F.extrabold(52)).tracking(-2).foregroundStyle(c.ink)
                         .fixedSize(horizontal: false, vertical: true)
                     Text("Hold Right ⌥ and speak — your words are transcribed and polished entirely on this Mac, then dropped into whatever you're typing in. Nothing leaves the device.")
@@ -25,7 +25,7 @@ struct OnboardingView: View {
 
                 VStack(spacing: 0) {
                     step(index: "01", title: "Microphone",
-                         subtitle: "So Wispr can hear you.",
+                         subtitle: "So Wisper can hear you.",
                          done: model.micGranted, c: c) { model.requestMicrophone() }
                     EditorUI.divider(c)
                     step(index: "02", title: "Accessibility",

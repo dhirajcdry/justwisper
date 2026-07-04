@@ -223,7 +223,7 @@ struct InsightsView: View {
                 .font(.system(size: 16, weight: .semibold)).foregroundStyle(c.sig)
             VStack(alignment: .leading, spacing: 3) {
                 Text("Private by design").font(F.semibold(14)).foregroundStyle(c.ink)
-                Text("History lives in ~/Library/Application Support/Wispr on this Mac. No cloud, no sync, no telemetry.")
+                Text("History lives in Application Support on this Mac. No cloud, no sync, no telemetry.")
                     .font(F.mono(10.5)).tracking(0.3).foregroundStyle(c.ink3)
             }
             Spacer()
