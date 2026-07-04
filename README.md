@@ -1,70 +1,85 @@
-# Wispr
+<h1>justwisper</h1>
 
-A local, push-to-talk dictation tool for macOS — a small [Wispr Flow](https://wisprflow.ai)–style
-clone. Hold a key, speak, and your words are transcribed **on-device** and typed
-into whatever app you're focused on. No cloud, no account; audio never leaves your Mac.
+**100% local, on-device voice dictation for macOS.** Hold a key, speak, and your
+words are transcribed **on your Mac** and dropped into whatever app you're typing
+in. No cloud. No account. Nothing ever leaves the device.
 
-- **Engine:** [WhisperKit](https://github.com/argmaxinc/argmax-oss-swift) (OpenAI Whisper running on the Apple Neural Engine via Core ML)
-- **UI:** menu-bar only (no Dock icon)
-- **Push-to-talk key:** hold **Right Option (⌥)**, release to transcribe
+An open-source, privacy-first take on [Wispr Flow](https://wisprflow.ai).
+
+- **Engine:** [WhisperKit](https://github.com/argmaxinc/argmax-oss-swift) — OpenAI Whisper on the Apple Neural Engine via Core ML
+- **Trigger:** hold **Right Option (⌥)** to talk, **double-tap** for hands-free, **Esc** to cancel
+- **Design:** native SwiftUI menu-bar app with an editorial "Press" look
+
+---
+
+## Download
+
+1. Grab the latest **`justwisper-x.y.dmg`** from the [Releases](../../releases) page.
+2. Open it and drag **justwisper** into **Applications**.
+3. Because this is an open-source build without a paid Apple Developer ID, macOS
+   quarantines it. Clear that once:
+
+   ```bash
+   xattr -dr com.apple.quarantine /Applications/justwisper.app
+   ```
+
+   (Or: right-click the app → **Open**, or approve it under *System Settings ▸
+   Privacy & Security ▸ Open Anyway*.)
+4. Launch it and grant **Microphone** + **Accessibility** when asked (see below).
 
 ## Requirements
 
-- Apple Silicon Mac, macOS 14+
-- Xcode / Swift toolchain (`swift --version`)
-- Internet **once** — the first launch downloads the `base.en` model (~150 MB) and caches it.
+- Apple Silicon Mac, **macOS 14+**
+- Internet **once** — the first launch downloads a Whisper model (~150 MB for `base.en`) and caches it locally. After that it runs fully offline.
 
-## Build & run
+## First-run permissions
+
+- **Microphone** — so it can hear you (prompted on first record).
+- **Accessibility** — so it can detect the global hotkey and paste into other
+  apps. Grant it under *System Settings ▸ Privacy & Security ▸ Accessibility*.
+
+The app shows a banner and a "SETUP" badge until both are granted.
+
+## Using it
+
+1. Focus any text field (Slack, Mail, Notes, your editor, a browser…).
+2. **Hold Right ⌥**, speak, then **release** — the transcript lands at your cursor.
+   Or **double-tap Right ⌥** to latch hands-free (tap once to stop). **Esc** cancels.
+3. Text is cleaned up on-device (fillers, stutters, casing, your dictionary,
+   voice commands). An optional AI rewrite (Apple Foundation Models) is off by default.
+
+## Build from source
 
 ```bash
-./build.sh          # compiles + assembles Wispr.app (ad-hoc signed)
-open ./Wispr.app    # launches into the menu bar
+./build.sh          # compiles + assembles justwisper.app (stable local signing)
+open ./justwisper.app
 ```
 
-To see logs, run the binary directly instead:
+Run the binary directly to watch logs:
 
 ```bash
-./Wispr.app/Contents/MacOS/Wispr
+./justwisper.app/Contents/MacOS/Wispr
 ```
 
-## First-run setup (two permissions)
+**Stable local signing** (so macOS keeps your Accessibility/Mic grants across
+rebuilds) is set up once with `./setup-signing.sh`. Without it, builds fall back
+to ad-hoc signing and macOS will re-prompt for permissions on each rebuild.
 
-1. **Accessibility** — needed to detect the global hotkey and paste text.
-   On first launch macOS prompts you; or add it manually under
-   *System Settings ▸ Privacy & Security ▸ Accessibility* and toggle **Wispr** on.
-   After granting, quit and relaunch.
-2. **Microphone** — prompted the first time you record. Allow it.
+## Packaging a release
 
-The menu-bar icon shows status: ⏳ loading model · 🎙️ ready · 🎙️(filled) listening · 〜 transcribing.
+```bash
+./package.sh            # arm64 .dmg (Apple Silicon)
+./package.sh universal  # arm64 + x86_64
+```
 
-## How to use
+Produces `justwisper-<version>.dmg`, ad-hoc signed, ready to attach to a GitHub Release.
 
-1. Focus any text field (Slack, Notes, your editor, a browser…).
-2. **Hold Right Option**, speak, then **release**.
-3. A moment later the transcript is pasted at the cursor.
+## Privacy
 
-## How it works
+Audio is captured, transcribed, and formatted entirely on your Mac. History and
+settings live in `~/Library/Application Support` — no cloud, no sync, no
+telemetry. You can erase all history from **Insights ▸ Erase History**.
 
-| File | Responsibility |
-|------|----------------|
-| `App.swift` | `@main` entry; sets up a menu-bar-only `NSApplication`. |
-| `AppDelegate.swift` | Wires everything together; menu bar + state machine. |
-| `HotkeyMonitor.swift` | Global monitor for the Right-Option push-to-talk key. |
-| `AudioRecorder.swift` | `AVAudioEngine` mic capture, resampled to 16 kHz mono. |
-| `Transcriber.swift` | WhisperKit wrapper; loads the model, transcribes the audio. |
-| `TextInjector.swift` | Pastes the result into the focused app via the clipboard + ⌘V. |
+## License
 
-## Customizing
-
-- **Model** — in `AppDelegate.swift`, change `Transcriber(model: "base.en")` to
-  `"tiny.en"` (faster), `"small.en"`, or `"large-v3"` (most accurate, slower).
-- **Hotkey** — in `HotkeyMonitor.swift`, change `pushToTalkKeyCode` (61 = Right ⌥,
-  58 = Left ⌥, 54 = Right ⌘).
-
-## Notes / known rough edges
-
-- Ad-hoc signing changes the app's signature on each rebuild, so macOS may ask you
-  to re-grant Accessibility after a rebuild. For a stable identity, sign with a
-  self-signed certificate.
-- Text is inserted by pasting (clipboard is saved and restored ~0.3 s later).
-- The mic tap mutates the sample buffer under a lock; fine for dictation lengths.
+Open source. See [`LICENSE`](LICENSE).
