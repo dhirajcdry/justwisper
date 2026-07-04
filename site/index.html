@@ -96,9 +96,12 @@
 
   /* sections */
   section{padding:96px 0}
-  .sechead{display:flex;align-items:baseline;gap:16px;margin-bottom:52px;flex-wrap:wrap}
-  .sechead h2{font-size:clamp(34px,5vw,52px);font-weight:800;letter-spacing:-.03em;line-height:1}
-  .sechead p{color:var(--ink2);font-size:16px;max-width:440px}
+  .sechead{margin-bottom:52px}
+  .sechead .eyebrow{display:block;margin-bottom:20px}
+  .sechead-row{display:flex;align-items:flex-end;justify-content:space-between;gap:48px;flex-wrap:wrap}
+  .sechead h2{font-size:clamp(34px,5vw,52px);font-weight:800;letter-spacing:-.03em;line-height:1.02}
+  .sechead p{color:var(--ink2);font-size:16px;line-height:1.55;max-width:380px;padding-bottom:7px}
+  @media(max-width:760px){.sechead p{max-width:none}}
 
   .features{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:var(--line);
             border:1px solid var(--line);border-radius:14px;overflow:hidden}
@@ -145,6 +148,14 @@
               border-radius:12px;padding:20px 24px;font-family:var(--mono);font-size:13px;max-width:560px}
   .quarantine .lbl{color:var(--sig2);font-size:11px;letter-spacing:.14em;margin-bottom:10px}
   .quarantine code{color:#EDE7D9;word-break:break-all}
+
+  /* contribute */
+  .contribute{border:1px solid var(--line);border-radius:16px;padding:46px;display:flex;
+              align-items:center;justify-content:space-between;gap:36px;flex-wrap:wrap;background:var(--paper2)}
+  .contribute h3{font-size:clamp(28px,4vw,42px);font-weight:800;letter-spacing:-.03em;line-height:1.02;margin:16px 0 14px}
+  .contribute p{color:var(--ink2);font-size:16px;line-height:1.55;max-width:540px}
+  .clinks{display:flex;flex-direction:column;gap:12px;flex:none}
+  .clinks .btn{justify-content:center}
 
   /* footer */
   footer{border-top:1px solid var(--line);background:var(--paper2);padding:44px 0}
@@ -211,8 +222,10 @@
   <div class="wrap">
     <div class="sechead">
       <div class="eyebrow">What it does</div>
-      <h2>Dictation, done right.</h2>
-      <p>Fast, private, and native — the way a Mac tool should feel.</p>
+      <div class="sechead-row">
+        <h2>Dictation, done right.</h2>
+        <p>Fast, private, and native — the way a Mac tool should feel.</p>
+      </div>
     </div>
     <div class="features">
       <div class="feat"><div class="num">01</div><h3>On-device, always</h3><p>Whisper runs on the Apple Neural Engine. Works on a plane, offline, wherever — your audio never touches a server.</p></div>
@@ -229,8 +242,10 @@
   <div class="wrap">
     <div class="sechead">
       <div class="eyebrow">The overlay</div>
-      <h2>Four ways to watch<br>your words set.</h2>
-      <p>A floating bar shows your words in real time. Pick the look — or drag it anywhere.</p>
+      <div class="sechead-row">
+        <h2>Four ways to watch<br>your words set.</h2>
+        <p>A floating bar shows your words in real time. Pick the look — or drag it anywhere.</p>
+      </div>
     </div>
     <div class="styles">
       <div class="style"><div class="schematic"><span class="bar sig" style="width:8px"></span><span class="bar" style="flex:1"></span><span class="bar sig" style="width:14px;height:14px;border-radius:4px"></span></div><div class="cap">3a</div><h4>Galley</h4><p>A compact bar — the line sets itself right-to-left as you talk.</p></div>
@@ -272,12 +287,29 @@
   </div>
 </section>
 
+<section style="padding-top:0">
+  <div class="wrap">
+    <div class="contribute">
+      <div>
+        <div class="eyebrow">Open source</div>
+        <h3>Built in the open.<br>Help make it better.</h3>
+        <p>justwisper is MIT-licensed and community-built. Found a bug, want a new overlay style, or speak a language we should tune for? Open an issue or send a pull request — the guide has everything you need to build it locally in a couple of minutes.</p>
+      </div>
+      <div class="clinks">
+        <a class="btn sig" href="https://github.com/dhirajcdry/justwisper/blob/main/CONTRIBUTING.md">How to contribute →</a>
+        <a class="btn ghost" href="https://github.com/dhirajcdry/justwisper/issues">Open an issue</a>
+      </div>
+    </div>
+  </div>
+</section>
+
 <footer>
   <div class="wrap foot">
     <a class="brand" href="#top"><span class="mark"><b>w</b><i></i></span>justwisper</a>
     <div class="links">
       <a href="#features">Features</a>
       <a href="#privacy">Privacy</a>
+      <a href="https://github.com/dhirajcdry/justwisper/blob/main/CONTRIBUTING.md">Contribute</a>
       <a href="https://github.com/dhirajcdry/justwisper">GitHub</a>
       <a href="https://github.com/dhirajcdry/justwisper/releases/latest">Download</a>
     </div>

@@ -10,7 +10,11 @@
 set -euo pipefail
 cd "$(dirname "$0")"
 
-APP="justwisper.app"
+# Build into dist/ so this NEVER clobbers the dev-signed build.sh output — an
+# ad-hoc app in the project root would break the Accessibility grant.
+DIST="dist"
+rm -rf "$DIST"; mkdir -p "$DIST"
+APP="$DIST/justwisper.app"
 BIN_NAME="Wispr"
 CONFIG="release"
 VERSION="$(/usr/libexec/PlistBuddy -c "Print :CFBundleShortVersionString" Resources/Info.plist)"
@@ -21,14 +25,13 @@ if [ "${1:-}" = "universal" ]; then
     ARCHS="--arch arm64 --arch x86_64"
     LABEL="universal (Apple Silicon + Intel)"
 fi
-DMG="justwisper-${VERSION}.dmg"
+DMG="$DIST/justwisper-${VERSION}.dmg"
 
 echo "==> Building ${CONFIG} — ${LABEL}..."
 swift build -c "$CONFIG" $ARCHS
 BIN_DIR="$(swift build -c "$CONFIG" $ARCHS --show-bin-path)"
 
 echo "==> Assembling ${APP}..."
-rm -rf "$APP"
 mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources"
 cp "$BIN_DIR/$BIN_NAME" "$APP/Contents/MacOS/$BIN_NAME"
 cp Resources/Info.plist "$APP/Contents/Info.plist"
