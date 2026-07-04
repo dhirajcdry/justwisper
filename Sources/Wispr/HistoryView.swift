@@ -51,7 +51,7 @@ struct HistoryView: View {
                     .font(F.mono(10.5)).tracking(1).foregroundStyle(c.ink3)
             }
             HStack(spacing: 2) {
-                icon("doc.on.doc", c) { model.copyTranscript(item.text) }
+                copyIcon(item, c)
                 icon("return", c) { model.reinsert(item.text) }
             }
             .padding(.top, 2)
@@ -67,6 +67,20 @@ struct HistoryView: View {
             Image(systemName: symbol).font(.system(size: 14)).foregroundStyle(c.ink3)
                 .frame(width: 30, height: 30)
         }.buttonStyle(.plain)
+    }
+
+    /// Copy icon that flashes to a vermillion ✓ after copying.
+    private func copyIcon(_ item: Dictation, _ c: Palette) -> some View {
+        let copied = model.copiedRowID == item.id
+        return Button { model.copyDictation(item) } label: {
+            Image(systemName: copied ? "checkmark" : "doc.on.doc")
+                .font(.system(size: 14, weight: copied ? .bold : .regular))
+                .foregroundStyle(copied ? c.sig : c.ink3)
+                .frame(width: 30, height: 30)
+        }
+        .buttonStyle(.plain)
+        .help(copied ? "Copied ✓" : "Copy")
+        .animation(.easeInOut(duration: 0.15), value: copied)
     }
 
     private func meta(_ item: Dictation) -> String {

@@ -5,7 +5,7 @@ set -euo pipefail
 cd "$(dirname "$0")"
 
 CONFIG="release"
-APP="Wisper.app"
+APP="justwisper.app"
 BIN_NAME="Wispr"   # internal SwiftPM executable name (invisible to users)
 
 echo "==> Building (${CONFIG})..."
@@ -22,8 +22,8 @@ cp "${BIN_DIR}/${BIN_NAME}" "${APP}/Contents/MacOS/${BIN_NAME}"
 cp "Resources/Info.plist" "${APP}/Contents/Info.plist"
 
 # App icon (Finder / Dock / ⌘-Tab).
-if [ -f "Resources/Wisper.icns" ]; then
-    cp "Resources/Wisper.icns" "${APP}/Contents/Resources/Wisper.icns"
+if [ -f "Resources/justwisper.icns" ]; then
+    cp "Resources/justwisper.icns" "${APP}/Contents/Resources/justwisper.icns"
 fi
 
 # Bundle the custom fonts (Hanken Grotesk + JetBrains Mono).

@@ -15,7 +15,7 @@ struct OnboardingView: View {
             VStack(alignment: .leading, spacing: 26) {
                 VStack(alignment: .leading, spacing: 10) {
                     Eyebrow(text: "PRIVATE · ON-DEVICE", color: c.sig)
-                    Text("Welcome to\nWisper.")
+                    Text("Welcome to\njustwisper.")
                         .font(F.extrabold(52)).tracking(-2).foregroundStyle(c.ink)
                         .fixedSize(horizontal: false, vertical: true)
                     Text("Hold Right ⌥ and speak — your words are transcribed and polished entirely on this Mac, then dropped into whatever you're typing in. Nothing leaves the device.")
@@ -25,7 +25,7 @@ struct OnboardingView: View {
 
                 VStack(spacing: 0) {
                     step(index: "01", title: "Microphone",
-                         subtitle: "So Wisper can hear you.",
+                         subtitle: "So justwisper can hear you.",
                          done: model.micGranted, c: c) { model.requestMicrophone() }
                     EditorUI.divider(c)
                     step(index: "02", title: "Accessibility",
@@ -47,7 +47,9 @@ struct OnboardingView: View {
                                 .font(F.semibold(15))
                             Image(systemName: "arrow.right").font(.system(size: 13, weight: .bold))
                         }
-                        .foregroundStyle(.white)
+                        // On the vermillion CTA use white; on the neutral ink
+                        // button use paper — otherwise it's white-on-cream in dark.
+                        .foregroundStyle(ready ? .white : c.paper)
                         .padding(.horizontal, 22).frame(height: 48)
                         .background(RoundedRectangle(cornerRadius: 9).fill(ready ? c.sig : c.ink))
                     }.buttonStyle(.plain)

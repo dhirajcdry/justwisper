@@ -43,7 +43,7 @@ enum Screen: String, CaseIterable {
     var blurb: String {
         switch self {
         case .insights: return "Deeper analytics on your dictation — words over time, speed trends, and where you dictate most."
-        case .dictionary: return "Teach Wisper your names, jargon, and custom spellings so transcription gets them right."
+        case .dictionary: return "Teach justwisper your names, jargon, and custom spellings so transcription gets them right."
         case .snippets: return "Save phrases you say often and expand them into longer text on command."
         default: return "Coming soon."
         }
@@ -734,7 +734,7 @@ final class AppModel: ObservableObject {
     private func paste(_ text: String) -> String? {
         refreshAccessibility(prompt: false)
         if !accessibilityGranted {
-            log("Skipped paste — Accessibility not granted. Enable Wisper in System Settings ▸ Privacy & Security ▸ Accessibility.")
+            log("Skipped paste — Accessibility not granted. Enable justwisper in System Settings ▸ Privacy & Security ▸ Accessibility.")
             return nil
         }
         let target = focus.lastExternalApp
@@ -938,6 +938,22 @@ final class AppModel: ObservableObject {
         NSPasteboard.general.clearContents()
         NSPasteboard.general.setString(text, forType: .string)
         log("Copied to clipboard.")
+    }
+
+    /// Which history row just got copied — drives the ✓ flash on its Copy icon.
+    @Published var copiedRowID: UUID?
+    private var copiedTimer: DispatchWorkItem?
+
+    /// Copy a dictation and flash "✓ Copied" on its row for a moment.
+    func copyDictation(_ item: Dictation) {
+        copyTranscript(item.text)
+        copiedRowID = item.id
+        copiedTimer?.cancel()
+        let work = DispatchWorkItem { [weak self] in
+            if self?.copiedRowID == item.id { self?.copiedRowID = nil }
+        }
+        copiedTimer = work
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.4, execute: work)
     }
 
     // MARK: - Log

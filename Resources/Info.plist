@@ -3,15 +3,15 @@
 <plist version="1.0">
 <dict>
     <key>CFBundleName</key>
-    <string>Wisper</string>
+    <string>justwisper</string>
     <key>CFBundleDisplayName</key>
-    <string>Wisper</string>
+    <string>justwisper</string>
     <key>CFBundleIdentifier</key>
     <string>com.justwisper.app</string>
     <key>CFBundleExecutable</key>
     <string>Wispr</string>
     <key>CFBundleIconFile</key>
-    <string>Wisper</string>
+    <string>justwisper</string>
     <key>CFBundlePackageType</key>
     <string>APPL</string>
     <key>CFBundleVersion</key>
@@ -23,7 +23,7 @@
     <key>LSUIElement</key>
     <false/>
     <key>NSMicrophoneUsageDescription</key>
-    <string>Wisper listens to your microphone while you hold the dictation key, and transcribes it on-device.</string>
+    <string>justwisper listens to your microphone while you hold the dictation key, and transcribes it on-device.</string>
     <key>NSHighResolutionCapable</key>
     <true/>
 </dict>

@@ -215,7 +215,7 @@ struct HomeView: View {
                     .font(F.mono(10.5)).tracking(1).foregroundStyle(c.ink3)
             }
             HStack(spacing: 2) {
-                rowIcon("doc.on.doc", c) { model.copyTranscript(item.text) }
+                copyIcon(item, c)
                 rowIcon("return", c) { model.reinsert(item.text) }
             }
             .padding(.top, 2)
@@ -232,6 +232,20 @@ struct HomeView: View {
                 .foregroundStyle(c.ink3)
                 .frame(width: 30, height: 30)
         }.buttonStyle(.plain)
+    }
+
+    /// Copy icon that flashes to a vermillion ✓ for a moment after a copy.
+    private func copyIcon(_ item: Dictation, _ c: Palette) -> some View {
+        let copied = model.copiedRowID == item.id
+        return Button { model.copyDictation(item) } label: {
+            Image(systemName: copied ? "checkmark" : "doc.on.doc")
+                .font(.system(size: 14, weight: copied ? .bold : .regular))
+                .foregroundStyle(copied ? c.sig : c.ink3)
+                .frame(width: 30, height: 30)
+        }
+        .buttonStyle(.plain)
+        .help(copied ? "Copied ✓" : "Copy")
+        .animation(.easeInOut(duration: 0.15), value: copied)
     }
 
     private func metaLine(_ item: Dictation) -> String {

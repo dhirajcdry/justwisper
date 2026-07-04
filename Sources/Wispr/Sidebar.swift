@@ -32,7 +32,7 @@ struct Sidebar: View {
             }
             .buttonStyle(.plain)
             .focusEffectDisabled()
-            .help("Wisper — Home")
+            .help("justwisper — Home")
             .padding(.bottom, 20)
 
             ForEach(items, id: \.screen) { item in
