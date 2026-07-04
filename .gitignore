@@ -1,0 +1,16 @@
+# Build artifacts
+.build/
+Wispr.app/
+*.o
+*.swiftmodule
+
+# Local code-signing material (self-signed dev cert; regenerate with setup-signing.sh)
+.signing/
+
+# macOS
+.DS_Store
+
+# Xcode / SwiftPM user state
+*.xcodeproj/xcuserdata/
+.swiftpm/
+xcuserdata/
