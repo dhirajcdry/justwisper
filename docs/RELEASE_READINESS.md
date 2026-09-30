@@ -4,7 +4,7 @@ Review date: 2026-09-30. This file records evidence and remaining checks; it is 
 
 ## Repository and privacy
 
-- The old v0.1 DMG was inspected separately. It contains no runtime history/audio or signing-key files, but its executable embeds one local user-home build path. Retire that legacy download or keep it private before making release assets public; publish the newly rebuilt 0.2.0 package instead.
+- The old v0.1 DMG was inspected separately. It contains no runtime history/audio or signing-key files, but its executable embeds one local user-home build path. That legacy release is now a private draft; the rebuilt 0.2.0 package is the public beta download.
 - The maintainer chose to retain the existing commit name and email attribution. GitHub links and the project attribution are intentional public information.
 - The seven existing commits and the candidate public files were scanned with Gitleaks 8.30.1. No matches were found. This is one check, not proof that every possible sensitive string is absent.
 - The public screenshots use isolated fictional fixtures. Their EXIF metadata contains image dimensions/resolution, not personal location data.
@@ -21,7 +21,7 @@ Review date: 2026-09-30. This file records evidence and remaining checks; it is 
 - Local documentation and asset links pass `python3 scripts/check-site.py`.
 - The package script produces an Apple Silicon DMG and SHA-256 checksum. A release needs fresh verification after any source change.
 
-The [clean GitHub CI run](https://github.com/dhirajcdry/justwisper/actions/runs/36749330522) passed dependency resolution, Swift tests, a release build, and documentation/asset checks for code commit `f2c53ac`. CI selects Xcode 26.2 explicitly because the locked dependencies need Swift 6.2+. This validates that toolchain; it does not validate all runtime OS versions or real-device interactions.
+The [clean GitHub CI run](https://github.com/dhirajcdry/justwisper/actions/runs/36768423543) passed dependency resolution, Swift tests, a release build, and documentation/asset checks for commit `1a8f57e`. CI selects Xcode 26.2 explicitly because the locked dependencies need Swift 6.2+. This validates that toolchain; it does not validate all runtime OS versions or real-device interactions.
 
 ## Required human beta checks
 
@@ -45,11 +45,12 @@ The current community package is ad-hoc signed and not notarized. A Developer ID
 
 Before announcing:
 
-- [ ] Review and merge the tested release branch; don't advertise uncommitted changes as an existing release.
-- [ ] Publish the rebuilt 0.2.0 asset and its matching checksum, with known limitations.
-- [ ] Make the repository public after the privacy review and enable private vulnerability reporting.
-- [ ] Deploy Pages; verify the live URL and download links.
-- [ ] Set the repository description, topics, website, and social preview.
+- [x] The tested release branch is on `main`.
+- [x] Published 0.2.0 as a prerelease with known limitations; downloaded the public asset without authentication and verified its checksum.
+- [x] Made the repository public after the privacy review and enabled private vulnerability reporting.
+- [x] Deployed Pages at https://dhirajcdry.github.io/justwisper/ and verified the live site, high-resolution images, mobile layout, and public download.
+- [x] Set the repository description, topics, and website. The site includes its high-resolution social preview.
+- [ ] Optionally upload `site/assets/social-card.png` as GitHub's repository social preview in Settings.
 - [ ] Invite a small beta group, respond to their setup problems, then share more widely.
 
 Support instructions, issue forms, contribution guidance, a roadmap, community conduct, licensing notices, and dependency update configuration are already in the repository. Popularity is not guaranteed; a reliable first experience and useful responses to early users are the next priorities.
