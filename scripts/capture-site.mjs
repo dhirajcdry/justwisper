@@ -37,16 +37,27 @@ await page.screenshot({ path: path.join(output, 'social-card.png') });
 await page.setViewportSize({ width: 1440, height: 1000 });
 await page.goto(`${base}/site/`, { waitUntil: 'networkidle' });
 await page.locator('#walkthrough').scrollIntoViewIfNeeded();
-await page.addStyleTag({ content: '.demo-overlay { transition: none !important; }' });
-await page.locator('#play-demo').click();
+await page.addStyleTag({ content: '.demo-overlay, .note-text { transition: none !important; animation: none !important; }' });
+
 await mkdir('/tmp/justwisper-walkthrough', { recursive: true });
 for (let step = 0; step < 3; step++) {
   await page.waitForFunction(expected => document.querySelector('#walkthrough').dataset.step === String(expected), step);
   await page.locator('#walkthrough').screenshot({ path: `/tmp/justwisper-walkthrough/step-${step}.png` });
 }
-await page.waitForFunction(() => document.querySelector('#play-demo').textContent.includes('Replay'));
-await page.locator('#play-demo').click();
-if (await page.locator('#walkthrough').getAttribute('data-step') !== '0') throw new Error('Replay failed');
+await page.waitForFunction(() => document.querySelector('#walkthrough').dataset.step === '0');
+// All six views remain directly selectable, including with reduced motion.
+await page.locator('#app-tour').scrollIntoViewIfNeeded();
+for (const view of ['home', 'history', 'insights', 'dictionary', 'snippets', 'settings']) {
+  await page.locator(`[data-view="${view}"]`).click();
+  await page.locator('#tour-image').evaluate(image => image.decode());
+  if (await page.locator(`[data-view="${view}"]`).getAttribute('aria-pressed') !== 'true') throw new Error('App tour selection failed');
+}
+await page.emulateMedia({ reducedMotion: 'reduce' });
+await page.locator('#walkthrough').scrollIntoViewIfNeeded();
+const frozenStep = await page.locator('#walkthrough').getAttribute('data-step');
+await page.waitForTimeout(3500);
+if (await page.locator('#walkthrough').getAttribute('data-step') !== frozenStep) throw new Error('Reduced motion did not stop playback');
+if (await page.locator('#motion-toggle').textContent() !== 'Enable motion') throw new Error('Motion control state incorrect');
 await browser.close();
-await writeFile('/tmp/justwisper-web-checks.json', JSON.stringify({ mobileOverflow: overflow, brokenImages, browserErrors: errors, overlayStyles: 4, walkthroughSteps: 3 }, null, 2));
+await writeFile('/tmp/justwisper-web-checks.json', JSON.stringify({ mobileOverflow: overflow, brokenImages, browserErrors: errors, overlayStyles: 4, walkthroughSteps: 3, automaticLoop: true, appViews: 6, reducedMotion: true }, null, 2));
 console.log('Desktop/mobile captures, social card, walkthrough frames, and browser checks passed.');

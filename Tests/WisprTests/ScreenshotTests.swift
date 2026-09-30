@@ -41,7 +41,7 @@ final class ScreenshotTests: XCTestCase {
             SnippetEntry(trigger: "my sign off", expansion: "Thanks for taking a look.\nTalk soon!"),
             SnippetEntry(trigger: "quick update", expansion: "A quick update:\n\nWhat changed:\nWhat's next:")
         ]
-        for (screen, name) in [(Screen.home, "home"), (.dictionary, "dictionary"), (.snippets, "snippets")] {
+        for (screen, name) in [(Screen.home, "home"), (.dictionary, "dictionary"), (.snippets, "snippets"), (.history, "history"), (.insights, "insights"), (.settings, "settings")] {
             model.nav = screen
             try render(ContentView(model: model), size: NSSize(width: 1120, height: 740),
                        to: output.appendingPathComponent("\(name).png"))

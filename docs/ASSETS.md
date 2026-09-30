@@ -9,6 +9,7 @@ The public images render the actual SwiftUI interface with fictional sample cont
 | `site/assets/social-card.png` | 2400 × 1260 README header and social preview |
 | `site/assets/screenshots/home.png` | Workspace with fictional dictation history |
 | `site/assets/screenshots/dictionary.png` | Sample custom vocabulary |
+| `site/assets/screenshots/history.png`, `insights.png`, `settings.png` | More native app views in the automatic tour |
 | `site/assets/screenshots/snippets.png` | Sample phrase expansions |
 | `site/assets/screenshots/overlay-*.png` | All four real floating overlay views |
 | `site/assets/walkthrough.gif` | Three-step illustrated shortcut loop for GitHub |
@@ -48,7 +49,7 @@ PLAYWRIGHT_MODULE=file:///tmp/justwisper-web-tools/node_modules/playwright/index
 PLAYWRIGHT_CHANNEL=chrome node scripts/capture-site.mjs
 ```
 
-This example uses an installed Google Chrome. Alternatively install Playwright's Chromium and omit `PLAYWRIGHT_CHANNEL`. Keep the local server running while capturing. The script checks mobile overflow, image loading, browser errors, the four overlay selectors, the FAQ, and walkthrough playback/replay. Desktop/mobile review screenshots and the check report are written to `/tmp/`.
+This example uses an installed Google Chrome. Alternatively install Playwright's Chromium and omit `PLAYWRIGHT_CHANNEL`. Keep the local server running while capturing. The script checks mobile overflow, image loading, browser errors, the four overlay selectors, the FAQ, and automatic walkthrough looping, six selectable app views, and reduced-motion behavior. Desktop/mobile review screenshots and the check report are written to `/tmp/`.
 
 Browser captures use a 2× device scale, including the social card and walkthrough frames. The social card is rendered from `scripts/visuals.html`. Walkthrough frames are captured from the interactive demo on the actual site.
 
