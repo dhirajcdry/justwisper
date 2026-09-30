@@ -4,7 +4,7 @@ Thanks for helping make a small Mac tool better. Improvements to the everyday re
 
 ## Build and run
 
-Use an Apple Silicon Mac running macOS 14+ with **Swift 6.2+ / Xcode 26+**. The committed dependency lockfile is required; CI selects Xcode 26.2 explicitly. The first speech-model setup needs internet; cached models run locally.
+To build, use an Apple Silicon Mac with **Swift 6.2+ / Xcode 26+** and a macOS version supported by that Xcode. The built app targets macOS 14+. The committed dependency lockfile is required; CI selects Xcode 26.2 explicitly. The first speech-model setup needs internet; cached models run locally.
 
 ```bash
 git clone https://github.com/dhirajcdry/justwisper.git

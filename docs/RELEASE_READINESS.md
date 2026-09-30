@@ -4,6 +4,7 @@ Review date: 2026-09-30. This file records evidence and remaining checks; it is 
 
 ## Repository and privacy
 
+- The old v0.1 DMG was inspected separately. It contains no runtime history/audio or signing-key files, but its executable embeds one local user-home build path. Retire that legacy download or keep it private before making release assets public; publish the newly rebuilt 0.2.0 package instead.
 - The maintainer chose to retain the existing commit name and email attribution. GitHub links and the project attribution are intentional public information.
 - The seven existing commits and the candidate public files were scanned with Gitleaks 8.30.1. No matches were found. This is one check, not proof that every possible sensitive string is absent.
 - The public screenshots use isolated fictional fixtures. Their EXIF metadata contains image dimensions/resolution, not personal location data.
@@ -20,7 +21,7 @@ Review date: 2026-09-30. This file records evidence and remaining checks; it is 
 - Local documentation and asset links pass `python3 scripts/check-site.py`.
 - The package script produces an Apple Silicon DMG and SHA-256 checksum. A release needs fresh verification after any source change.
 
-CI selects Xcode 26.2 explicitly because the locked dependencies need Swift 6.2+. A successful local build under a newer Xcode does not prove the minimum toolchain or all runtime OS versions work; inspect the GitHub CI run before merging the release branch.
+The [clean GitHub CI run](https://github.com/dhirajcdry/justwisper/actions/runs/36749330522) passed dependency resolution, Swift tests, a release build, and documentation/asset checks for code commit `f2c53ac`. CI selects Xcode 26.2 explicitly because the locked dependencies need Swift 6.2+. This validates that toolchain; it does not validate all runtime OS versions or real-device interactions.
 
 ## Required human beta checks
 
