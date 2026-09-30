@@ -6,7 +6,7 @@ The public images render the actual SwiftUI interface with fictional sample cont
 
 | Asset | Purpose |
 | --- | --- |
-| `site/assets/social-card.png` | 1200 × 630 README header and social preview |
+| `site/assets/social-card.png` | 2400 × 1260 README header and social preview |
 | `site/assets/screenshots/home.png` | Workspace with fictional dictation history |
 | `site/assets/screenshots/dictionary.png` | Sample custom vocabulary |
 | `site/assets/screenshots/snippets.png` | Sample phrase expansions |
@@ -25,7 +25,7 @@ WISPR_SCREENSHOT_DIR="$PWD/site/assets/screenshots" \
   swift test --filter ScreenshotTests
 ```
 
-The renderer instantiates `AppModel(preview: true)`. That path starts with empty collections, uses a separate preferences suite, skips persisted dictation reads/writes, and does not start hotkeys, microphone capture, or model preparation. Fixtures live in `Tests/WisprTests/ScreenshotTests.swift`. It renders real SwiftUI views through an AppKit hosting window and exports PNGs.
+The renderer instantiates `AppModel(preview: true)`. That path starts with empty collections, uses a separate preferences suite, skips persisted dictation reads/writes, and does not start hotkeys, microphone capture, or model preparation. Fixtures live in `Tests/WisprTests/ScreenshotTests.swift`. It renders real SwiftUI views through an AppKit hosting window at 4× resolution and exports lossless PNGs. Full app screenshots are 4480 × 2960 pixels; overlays use the same 4× scale. The renderer sets the SwiftUI display scale and cached text drawing layers to 4× before capture, so text is rasterized at the target resolution rather than enlarging a finished image. Pixel dimensions are asserted during capture.
 
 Normal `swift test` skips screenshot generation unless the environment variable is set.
 
@@ -50,7 +50,7 @@ PLAYWRIGHT_CHANNEL=chrome node scripts/capture-site.mjs
 
 This example uses an installed Google Chrome. Alternatively install Playwright's Chromium and omit `PLAYWRIGHT_CHANNEL`. Keep the local server running while capturing. The script checks mobile overflow, image loading, browser errors, the four overlay selectors, the FAQ, and walkthrough playback/replay. Desktop/mobile review screenshots and the check report are written to `/tmp/`.
 
-The social card is rendered from `scripts/visuals.html`. Walkthrough frames are captured from the interactive demo on the actual site.
+Browser captures use a 2× device scale, including the social card and walkthrough frames. The social card is rendered from `scripts/visuals.html`. Walkthrough frames are captured from the interactive demo on the actual site.
 
 ## Make the short walkthrough
 

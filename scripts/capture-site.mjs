@@ -6,7 +6,7 @@ const base = process.env.WISPR_PREVIEW_URL || 'http://127.0.0.1:8765';
 const output = path.resolve('site/assets');
 await mkdir(output, { recursive: true });
 const browser = await chromium.launch({ channel: process.env.PLAYWRIGHT_CHANNEL || undefined });
-const page = await browser.newPage({ viewport: { width: 1440, height: 1000 }, deviceScaleFactor: 1 });
+const page = await browser.newPage({ viewport: { width: 1440, height: 1000 }, deviceScaleFactor: 2 });
 const errors = [];
 page.on('pageerror', error => errors.push(error.message));
 await page.goto(`${base}/site/`, { waitUntil: 'networkidle' });
@@ -30,6 +30,8 @@ if (brokenImages.length || errors.length) throw new Error(JSON.stringify({ broke
 // Share card + README header, captured from the same source.
 await page.setViewportSize({ width: 1200, height: 630 });
 await page.goto(`${base}/scripts/visuals.html`, { waitUntil: 'networkidle' });
+await page.evaluate(() => document.fonts.ready);
+await page.locator('img').evaluateAll(images => Promise.all(images.map(image => image.decode())));
 await page.screenshot({ path: path.join(output, 'social-card.png') });
 // Three honest, clearly labeled walkthrough frames. No transcription timing claim.
 await page.setViewportSize({ width: 1440, height: 1000 });

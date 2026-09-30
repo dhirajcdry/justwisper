@@ -1,4 +1,4 @@
-# justwisper 0.2.0
+# justwisper 0.2.0 — early public beta
 
 Local voice dictation for macOS. Hold Right Option, speak, and release to insert your words. Double-tap for hands-free dictation.
 
@@ -23,4 +23,4 @@ To check the download, place the DMG and `SHA256SUMS` in the same folder and run
 
 Recognition quality and latency depend on your model, language, microphone, and Mac. Secure fields and some apps can block automatic insertion; completed transcripts can be copied from History. Optional Apple Intelligence polish requires a supported macOS 26+ setup. Live previews show recent words rather than the entire take.
 
-This is an early release. Please include your Mac, macOS version, model, and reproduction steps in bug reports, and remove personal transcript text from logs.
+This is an early public beta. Fresh-install, permission recovery, and cross-app behavior still need wider testing on other Macs. Please include your Mac, macOS version, model, and reproduction steps in bug reports, and remove personal transcript text from logs.

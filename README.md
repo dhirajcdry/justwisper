@@ -8,7 +8,7 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/dhirajcdry/justwisper/releases/latest"><strong>Download for macOS ↓</strong></a> ·
+  <a href="https://github.com/dhirajcdry/justwisper/releases/tag/v0.2.0"><strong>Download for macOS ↓</strong></a> ·
   <a href="#see-it-in-action">See it in action</a> ·
   <a href="#get-started">Get started</a> ·
   <a href="CONTRIBUTING.md">Contribute</a>
@@ -70,7 +70,7 @@ Ticker and Proof are also available in Settings. All four styles can be repositi
 
 ## Get started
 
-1. **Download** the DMG from [GitHub Releases](https://github.com/dhirajcdry/justwisper/releases/latest). Open it and drag **justwisper** into **Applications**.
+1. **Download** the DMG from [GitHub Releases](https://github.com/dhirajcdry/justwisper/releases/tag/v0.2.0). Open it and drag **justwisper** into **Applications**.
 2. **Open the app.** Community builds are ad-hoc signed and **not notarized**. If macOS blocks the first launch, go to **System Settings → Privacy & Security → Open Anyway** after trying to open it. Only approve a download you trust. [Apple’s first-launch guide](https://support.apple.com/en-us/102445).
 3. **Grant Microphone and Accessibility.** Microphone captures your voice; Accessibility enables the global shortcut and insertion into other apps.
 4. **Let the model finish setting up.** Base is the default. First setup needs internet for the model and tokenizer files; later launches reuse them.

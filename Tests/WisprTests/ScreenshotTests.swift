@@ -48,7 +48,7 @@ final class ScreenshotTests: XCTestCase {
         }
         model.state = .recording
         model.elapsed = 7
-        model.partialText = "Less time typing. More time making things."
+        model.partialText = "More time making things."
         model.levels = (0..<AppModel.waveformBars).map { Float(0.12 + abs(sin(Double($0) * 0.67)) * 0.7) }
         model.level = 0.65
         for style in FlowBarStyle.allCases {
@@ -63,6 +63,7 @@ final class ScreenshotTests: XCTestCase {
     private func render<V: View>(_ view: V, size: NSSize, to destination: URL) throws {
         let host = NSHostingView(rootView: view
             .environment(\.colorScheme, .light)
+            .environment(\.displayScale, 4)
             .frame(width: size.width, height: size.height))
         let window = NSWindow(contentRect: NSRect(origin: .zero, size: size),
                               styleMask: [.borderless], backing: .buffered, defer: false)
@@ -75,8 +76,26 @@ final class ScreenshotTests: XCTestCase {
         window.orderBack(nil)
         host.layoutSubtreeIfNeeded()
         RunLoop.main.run(until: Date().addingTimeInterval(0.25))
-        let bitmap = try XCTUnwrap(host.bitmapImageRepForCachingDisplay(in: host.bounds))
+        // SwiftUI caches glyphs in drawing layers at the window's screen
+        // scale. Refresh only those layers at export resolution. Image layers
+        // (including SF Symbols) must retain their source contents.
+        func setCaptureScale(_ layer: CALayer) {
+            if String(describing: type(of: layer)) == "CGDrawingLayer" {
+                layer.contentsScale = 4
+                layer.setNeedsDisplay()
+            }
+            for child in layer.sublayers ?? [] { setCaptureScale(child) }
+        }
+        if let layer = host.layer { setCaptureScale(layer) }
+        host.displayIfNeeded()
+        let bitmap = try XCTUnwrap(NSBitmapImageRep(
+            bitmapDataPlanes: nil, pixelsWide: Int(size.width * 4), pixelsHigh: Int(size.height * 4),
+            bitsPerSample: 8, samplesPerPixel: 4, hasAlpha: true, isPlanar: false,
+            colorSpaceName: .deviceRGB, bytesPerRow: 0, bitsPerPixel: 0))
+        bitmap.size = size
         host.cacheDisplay(in: host.bounds, to: bitmap)
+        XCTAssertEqual(bitmap.pixelsWide, Int(size.width * 4))
+        XCTAssertEqual(bitmap.pixelsHigh, Int(size.height * 4))
         let data = try XCTUnwrap(bitmap.representation(using: .png, properties: [:]))
         try data.write(to: destination)
         window.orderOut(nil)
