@@ -1,85 +1,159 @@
-<h1>justwisper</h1>
+<p align="center">
+  <img src="site/assets/social-card.png" alt="justwisper — Your voice. Your words. Your Mac. Local voice dictation for macOS." width="1200">
+</p>
 
-**100% local, on-device voice dictation for macOS.** Hold a key, speak, and your
-words are transcribed **on your Mac** and dropped into whatever app you're typing
-in. No cloud. No account. Nothing ever leaves the device.
+<p align="center">
+  <strong>A little less typing. A little more thinking out loud.</strong><br>
+  Free, open-source dictation for your Mac. Hold Right Option, speak, and release to insert your words.
+</p>
 
-An open-source, privacy-first take on [Wispr Flow](https://wisprflow.ai).
+<p align="center">
+  <a href="https://github.com/dhirajcdry/justwisper/releases/latest"><strong>Download for macOS ↓</strong></a> ·
+  <a href="#see-it-in-action">See it in action</a> ·
+  <a href="#get-started">Get started</a> ·
+  <a href="CONTRIBUTING.md">Contribute</a>
+</p>
 
-- **Engine:** [WhisperKit](https://github.com/argmaxinc/argmax-oss-swift) — OpenAI Whisper on the Apple Neural Engine via Core ML
-- **Trigger:** hold **Right Option (⌥)** to talk, **double-tap** for hands-free, **Esc** to cancel
-- **Design:** native SwiftUI menu-bar app with an editorial "Press" look
+<p align="center">Apple Silicon · macOS 14+ · SwiftUI · MIT license · Early release</p>
 
 ---
 
-## Download
+## The idea
 
-1. Grab the latest **`justwisper-x.y.dmg`** from the [Releases](../../releases) page.
-2. Open it and drag **justwisper** into **Applications**.
-3. Because this is an open-source build without a paid Apple Developer ID, macOS
-   quarantines it. Clear that once:
+You already have somewhere to write. justwisper gives you another way to get the words there.
 
-   ```bash
-   xattr -dr com.apple.quarantine /Applications/justwisper.app
-   ```
+Focus a text field, hold **Right ⌥**, and talk. A small floating bar follows along. Release the key and the final transcript is inserted into the app you were using. Double-tap for hands-free dictation.
 
-   (Or: right-click the app → **Open**, or approve it under *System Settings ▸
-   Privacy & Security ▸ Open Anyway*.)
-4. Launch it and grant **Microphone** + **Accessibility** when asked (see below).
+Speech recognition runs **on your Mac** using [WhisperKit](https://github.com/argmaxinc/argmax-oss-swift) and Core ML. There’s no account, subscription, or app telemetry. Models and tokenizer files download during setup; once cached, dictation works offline.
 
-## Requirements
+## See it in action
 
-- Apple Silicon Mac, **macOS 14+**
-- Internet **once** — the first launch downloads a Whisper model (~150 MB for `base.en`) and caches it locally. After that it runs fully offline.
+![Illustrated three-step walkthrough: hold Right Option, speak, release to insert. Uses the actual overlay with fictional sample content; not a timing benchmark.](site/assets/walkthrough.gif)
 
-## First-run permissions
+*Illustrated walkthrough with sample content, not a recording-speed benchmark. [Download the short MP4](site/assets/walkthrough.mp4).*
 
-- **Microphone** — so it can hear you (prompted on first record).
-- **Accessibility** — so it can detect the global hotkey and paste into other
-  apps. Grant it under *System Settings ▸ Privacy & Security ▸ Accessibility*.
+<details>
+<summary><strong>A closer look at the actual app</strong></summary>
 
-The app shows a banner and a "SETUP" badge until both are granted.
+### Your workspace
 
-## Using it
+![Home screen showing sample dictations and local usage statistics.](site/assets/screenshots/home.png)
 
-1. Focus any text field (Slack, Mail, Notes, your editor, a browser…).
-2. **Hold Right ⌥**, speak, then **release** — the transcript lands at your cursor.
-   Or **double-tap Right ⌥** to latch hands-free (tap once to stop). **Esc** cancels.
-3. Text is cleaned up on-device (fillers, stutters, casing, your dictionary,
-   voice commands). An optional AI rewrite (Apple Foundation Models) is off by default.
+### Your vocabulary and snippets
+
+| Teach it your words | Expand the things you say often |
+| --- | --- |
+| ![Dictionary with fictional mappings for WhisperKit, SwiftUI, and justwisper.](site/assets/screenshots/dictionary.png) | ![Snippets with fictional sign-off and status-update templates.](site/assets/screenshots/snippets.png) |
+
+### A floating bar that fits your workflow
+
+| Galley — compact | Column — room to think |
+| --- | --- |
+| ![Galley recording overlay with sample words.](site/assets/screenshots/overlay-galley.png) | ![Column recording overlay with sample words.](site/assets/screenshots/overlay-column.png) |
+
+Ticker and Proof are also available in Settings. All four styles can be repositioned.
+
+*These images render the real SwiftUI views with fictional data. No personal dictation history is included. [How the assets are made](docs/ASSETS.md).*
+
+</details>
+
+## What’s inside
+
+- **Hold or go hands-free.** Hold Right Option for push-to-talk; double-tap to keep recording.
+- **Live previews.** Follow recent words while speaking. The final pass processes the entire take.
+- **Local history.** Copy or reinsert a previous dictation. Erase history from Insights.
+- **Your vocabulary.** Map spoken terms to names, spellings, and project jargon.
+- **Spoken shortcuts.** Expand a short trigger into a saved phrase or multi-line snippet.
+- **Formatting controls.** Rule-based cleanup, voice commands, and per-app formatting modes. Optional on-device AI polish uses Apple Intelligence on supported macOS 26+ Macs and is off by default.
+- **Recoverable cancellation.** Esc cancels; the short undo window can recover an accidental cancellation.
+- **Four overlay styles.** Galley, Column, Ticker, and Proof, with a draggable position.
+
+## Get started
+
+1. **Download** the DMG from [GitHub Releases](https://github.com/dhirajcdry/justwisper/releases/latest). Open it and drag **justwisper** into **Applications**.
+2. **Open the app.** Community builds are ad-hoc signed and **not notarized**. If macOS blocks the first launch, go to **System Settings → Privacy & Security → Open Anyway** after trying to open it. Only approve a download you trust. [Apple’s first-launch guide](https://support.apple.com/en-us/102445).
+3. **Grant Microphone and Accessibility.** Microphone captures your voice; Accessibility enables the global shortcut and insertion into other apps.
+4. **Let the model finish setting up.** Base is the default. First setup needs internet for the model and tokenizer files; later launches reuse them.
+5. **Focus a text field. Hold Right ⌥, speak, then release.**
+
+If the supported first-launch flow doesn’t work, see [Troubleshooting](docs/TROUBLESHOOTING.md). Release assets include a SHA-256 checksum so you can verify the downloaded file.
+
+### The shortcuts
+
+| Action | Shortcut |
+| --- | --- |
+| Push-to-talk | Hold **Right ⌥**; release to finish |
+| Hands-free | Quickly double-tap **Right ⌥**; tap once to finish |
+| Cancel | **Esc** or the overlay’s **×** |
+| Recover a cancelled take | **Undo** during the brief recovery window |
+| Move the overlay | Drag it |
+| Reset overlay position | Double-click the overlay, or reset it in Settings |
+
+The trigger is the **right-hand Option key**, not the right mouse button. Keep the app running in the menu bar to keep the model in memory.
+
+### Choose a model
+
+| Model | Language | Best starting point for |
+| --- | --- | --- |
+| Tiny | English | The smallest model and lighter inference work |
+| **Base** · default | English | Everyday dictation |
+| Small | English | Trying a larger English model when Base misses words |
+| Turbo | Multilingual | Dictating in languages beyond English |
+
+Model download sizes and speed vary by variant. The app shows an estimated size before selection. Your selection survives relaunches. A full quit unloads the model from memory; reopening loads the cached files again.
+
+## Privacy, plainly
+
+Audio is captured in memory and processed locally. The app does not intentionally save audio recordings to disk. Completed transcript history, vocabulary, snippets, and per-app formatting rules are stored under `~/Library/Application Support/Wispr/`.
+
+Insertion first uses macOS Accessibility. A clipboard-based paste is the fallback, so clipboard managers may see that text. The destination app controls what happens to text after insertion. Current builds log word counts and timings rather than transcript text. Older logs can contain transcripts; review diagnostics before sharing.
+
+[Read the storage and network details →](docs/PRIVACY.md)
+
+## Current limits
+
+This is an early release, not a promise of perfect recognition. Accuracy depends on the model, language, microphone, and background noise. Apple Silicon is the supported release target; Intel builds are not part of the tested distribution.
+
+Some apps and secure text fields block automatic insertion. Copy the completed transcript from History if needed. The interface’s live preview shows recent audio; the final transcript includes the complete take. Apple Intelligence polish requires a compatible Mac and an available system model.
+
+Found a rough edge? [Report it](https://github.com/dhirajcdry/justwisper/issues/new?template=bug_report.yml) with your Mac, macOS version, app version, and reproduction steps. Please remove personal transcript text from logs.
 
 ## Build from source
 
 ```bash
-./build.sh          # compiles + assembles justwisper.app (stable local signing)
+git clone https://github.com/dhirajcdry/justwisper.git
+cd justwisper
+./build.sh
 open ./justwisper.app
 ```
 
-Run the binary directly to watch logs:
+Building requires **Swift 6.2+ (Xcode 26+)** because of the locked dependencies; running the app still targets macOS 14+. To retain local permissions across rebuilds, run `./setup-signing.sh` once before building. This creates a local development identity; it is not Apple Developer ID signing or notarization.
 
 ```bash
-./justwisper.app/Contents/MacOS/Wispr
+swift test                 # regression suite; no microphone required
+./package.sh               # Apple Silicon DMG in dist/
 ```
 
-**Stable local signing** (so macOS keeps your Accessibility/Mic grants across
-rebuilds) is set up once with `./setup-signing.sh`. Without it, builds fall back
-to ad-hoc signing and macOS will re-prompt for permissions on each rebuild.
+The real-model smoke test and screenshot renderer are opt-in. See [Contributing](CONTRIBUTING.md), [asset generation](docs/ASSETS.md), and the [release guide](docs/RELEASING.md).
 
-## Packaging a release
+## Built to be understood
 
-```bash
-./package.sh            # arm64 .dmg (Apple Silicon)
-./package.sh universal  # arm64 + x86_64
+The app is native SwiftUI, with a small set of focused components:
+
+```text
+Right Option → gesture state → mic capture → WhisperKit → cleanup → text insertion
+                                   │                         │
+                              live preview              local history
 ```
 
-Produces `justwisper-<version>.dmg`, ad-hoc signed, ready to attach to a GitHub Release.
+Start with [AppModel.swift](Sources/Wispr/AppModel.swift) for orchestration, [HotkeyMonitor.swift](Sources/Wispr/HotkeyMonitor.swift) for gestures, and [WhisperEngine.swift](Sources/Wispr/WhisperEngine.swift) for the local inference pipeline.
 
-## Privacy
+For help, see [Support](SUPPORT.md). For planned work, see the [Roadmap](ROADMAP.md). Please follow our [community conduct](CODE_OF_CONDUCT.md).
 
-Audio is captured, transcribed, and formatted entirely on your Mac. History and
-settings live in `~/Library/Application Support` — no cloud, no sync, no
-telemetry. You can erase all history from **Insights ▸ Erase History**.
+Contributions that make the everyday dictation loop more reliable are especially welcome. [The contributor guide](CONTRIBUTING.md) explains how to build, test, and send a change.
 
-## License
+---
 
-Open source. See [`LICENSE`](LICENSE).
+Built by [Dhiraj Chaudhary](https://github.com/dhirajcdry). App code is [MIT licensed](LICENSE); dependencies, models, and fonts retain their own licenses. [Third-party notices](THIRD_PARTY_NOTICES.md).
+
+justwisper is an independent project inspired by push-to-talk dictation. It is not affiliated with Wispr Flow, Apple, or OpenAI.

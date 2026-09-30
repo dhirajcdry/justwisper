@@ -29,13 +29,18 @@ struct FlowBar: View {
                 }
             }
         }
-        .shadow(color: .black.opacity(scheme == .dark ? 0.4 : 0.22), radius: 20, y: 9)
+        // Two tight shadows: a crisp contact shadow + one soft ambient halo.
+        // Both stay well inside the 30pt transparent margin below, so the blur
+        // fades to nothing instead of being clipped into a hard "box/saddle" by
+        // the window edge (the earlier, wider radius-20 shadow was getting cut).
+        .shadow(color: .black.opacity(scheme == .dark ? 0.38 : 0.14), radius: 3,  y: 1)
+        .shadow(color: .black.opacity(scheme == .dark ? 0.32 : 0.15), radius: 11, y: 6)
         // The whole bar is draggable. simultaneousGesture so the ✓/✕/COPY/UNDO
         // buttons still get plain taps — only an actual drag moves the bar.
         // Double-click anywhere resets to the default spot.
         .onTapGesture(count: 2) { model.resetOverlayPosition() }
         .simultaneousGesture(moveGesture)
-        .padding(26) // transparent room for the shadow (prevents a clipped box)
+        .padding(30) // transparent room so the soft shadow fully fades (no clip)
     }
 
     // MARK: - Drag to reposition

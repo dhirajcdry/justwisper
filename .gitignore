@@ -16,3 +16,17 @@ dist/
 *.xcodeproj/xcuserdata/
 .swiftpm/
 xcuserdata/
+
+# Local credentials and runtime data (never repository fixtures)
+.env
+.env.*
+!.env.example
+*.p12
+*.pfx
+*.pem
+*.key
+*.keychain
+*.keychain-db
+*.log
+node_modules/
+__pycache__/

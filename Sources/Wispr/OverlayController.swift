@@ -119,7 +119,7 @@ final class OverlayController {
         return panel
     }
 
-    /// Panel size = the current style's content size + the FlowBar's 26pt
+    /// Panel size = the current style's content size + the FlowBar's 30pt
     /// transparent shadow margin on every side. The landed confirmation always
     /// uses the compact pill, whatever the recording style.
     private func panelSize(for model: AppModel) -> NSSize {
@@ -134,7 +134,7 @@ final class OverlayController {
         } else {
             content = model.flowStyle.contentSize
         }
-        return NSSize(width: content.width + 52, height: content.height + 52)
+        return NSSize(width: content.width + 60, height: content.height + 60)
     }
 
     private func resizeForCurrentStyle() {

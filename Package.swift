@@ -7,7 +7,7 @@ let package = Package(
         .macOS(.v14)
     ],
     dependencies: [
-        .package(url: "https://github.com/argmaxinc/argmax-oss-swift.git", from: "0.9.0")
+        .package(url: "https://github.com/argmaxinc/argmax-oss-swift.git", exact: "0.18.0")
     ],
     targets: [
         .executableTarget(
@@ -16,6 +16,11 @@ let package = Package(
                 .product(name: "WhisperKit", package: "argmax-oss-swift")
             ],
             path: "Sources/Wispr"
+        ),
+        .testTarget(
+            name: "WisprTests",
+            dependencies: ["Wispr"],
+            path: "Tests/WisprTests"
         )
     ]
 )

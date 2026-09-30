@@ -34,7 +34,12 @@ final class HotkeyMonitor {
         case latched     // hands-free on; a single tap stops
     }
     private var phase: Phase = .idle
-    private var downTime = Date()
+    // NSEvent monitors can deliver callbacks after the physical event (and the
+    // local + global monitors both see the same event). Use the event's
+    // monotonic timestamp rather than callback wall-clock time.
+    private var downTimestamp: TimeInterval = 0
+    private var lastRightEventTimestamp: TimeInterval?
+    private var tapReleaseTimestamp: TimeInterval?
     private var consumeNextUp = false     // swallow the release that goes with a stop-tap
     private var pendingStop: DispatchWorkItem?
 
@@ -44,6 +49,7 @@ final class HotkeyMonitor {
     private let doubleTapGap: TimeInterval = 0.4    // max gap between taps for a double-tap
 
     func start() {
+        guard localMonitor == nil else { return }
         globalMonitor = NSEvent.addGlobalMonitorForEvents(matching: .flagsChanged) { [weak self] event in
             self?.handle(event)
         }
@@ -74,16 +80,29 @@ final class HotkeyMonitor {
         cancelPendingStop()
         phase = .idle
         consumeNextUp = false
+        lastRightEventTimestamp = nil
+        tapReleaseTimestamp = nil
     }
 
     private func handle(_ event: NSEvent) {
         guard event.keyCode == keyCode else { return }
-        if event.modifierFlags.contains(.option) { keyDown() } else { keyUp() }
+        // flagsChanged exposes aggregate modifier flags, but the device mask
+        // identifies the right key even when left Option is held. Deduplicate
+        // repeated delivery of the same event by timestamp.
+        if let last = lastRightEventTimestamp, event.timestamp == last { return }
+        lastRightEventTimestamp = event.timestamp
+        if event.modifierFlags.rawValue & 0x40 != 0 {
+            keyDown(at: event.timestamp)
+        } else {
+            keyUp(at: event.timestamp)
+        }
     }
 
-    private func keyDown() {
-        downTime = Date()
+    #if DEBUG
+    func handleForTesting(_ event: NSEvent) { handle(event) }
+    #endif
 
+    private func keyDown(at timestamp: TimeInterval) {
         switch phase {
         case .latched:
             // Hands-free is on → a tap stops it. Swallow the matching release.
@@ -94,6 +113,17 @@ final class HotkeyMonitor {
             fire(onStop)
 
         case .tapPending:
+            downTimestamp = timestamp
+            if let release = tapReleaseTimestamp,
+               timestamp - release > doubleTapGap {
+                // The timer may be delayed behind this event on the main queue.
+                cancelPendingStop()
+                tapReleaseTimestamp = nil
+                // The first take is still active; keep it continuous. Starting
+                // again here would race AppModel's begin-recording guard.
+                phase = .holding
+                break
+            }
             // A second press arrived inside the window → this is a double-tap in
             // progress. Keep the take rolling; keyUp decides latch-vs-hold.
             cancelPendingStop()
@@ -101,19 +131,20 @@ final class HotkeyMonitor {
 
         case .idle:
             // Fresh press → begin recording (covers both a hold and a first tap).
+            downTimestamp = timestamp
             phase = .holding
             fire(onStart)
 
         case .holding, .secondDown:
-            // A key repeat / duplicate down (both monitors, or OS repeat). Ignore.
+            // Ignore a duplicate down without changing the hold duration.
             break
         }
     }
 
-    private func keyUp() {
+    private func keyUp(at timestamp: TimeInterval) {
         if consumeNextUp { consumeNextUp = false; return }
 
-        let held = Date().timeIntervalSince(downTime)
+        let held = max(0, timestamp - downTimestamp)
 
         switch phase {
         case .holding:
@@ -125,6 +156,7 @@ final class HotkeyMonitor {
                 // First quick tap: keep recording through the double-tap window,
                 // then finalize as a brief take if no second tap arrives.
                 phase = .tapPending
+                tapReleaseTimestamp = timestamp
                 scheduleFinalize()
             }
 

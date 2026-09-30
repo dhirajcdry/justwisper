@@ -46,11 +46,13 @@ struct Sidebar: View {
             Rectangle().fill(c.line).frame(height: 1).padding(.horizontal, 14).padding(.bottom, 10)
 
             railItem("gearshape", "Settings", active: model.nav == .settings, c) { model.nav = .settings }
-            railItem("questionmark.circle", "Help", active: false, c) {}
+            railItem("questionmark.circle", "Help", active: false, c) {
+                NSWorkspace.shared.open(URL(string: "https://github.com/dhirajcdry/justwisper/blob/main/docs/TROUBLESHOOTING.md")!)
+            }
 
             Circle().fill(Color(hex: 0x28C840)).frame(width: 6, height: 6)
                 .padding(.top, 12)
-                .help("v0.1 · on-device")
+                .help("v\(Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "dev") · on-device")
         }
         .padding(.bottom, 20)
         .frame(width: 72)

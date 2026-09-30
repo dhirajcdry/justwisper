@@ -56,7 +56,9 @@ final class AppModel: ObservableObject {
     @Published var transcript: String = ""
     @Published var logLines: [String] = []
     @Published var autoPaste: Bool = true
-    @Published var modelName: String = "base.en"
+    @Published var modelName: String = "base.en" {
+        didSet { defaults.set(modelName, forKey: "modelName") }
+    }
     @Published var accessibilityGranted: Bool = false
     @Published var micGranted: Bool = false
 
@@ -68,7 +70,7 @@ final class AppModel: ObservableObject {
     // History + stats — persisted locally (Application Support/Wispr), capped
     // so the file can't grow without bound. Nothing ever leaves this Mac.
     @Published var history: [Dictation] {
-        didSet { Persist.save(Array(history.prefix(5000)), to: "history.json") }
+        didSet { if !isPreview { Persist.save(Array(history.prefix(5000)), to: "history.json") } }
     }
     var totalWords: Int { history.reduce(0) { $0 + $1.wordCount } }
 
@@ -102,18 +104,19 @@ final class AppModel: ObservableObject {
     }
 
     // Custom vocabulary + snippets (persisted to JSON).
-    @Published var vocab: [VocabEntry] { didSet { Persist.save(vocab, to: "dictionary.json") } }
-    @Published var snippets: [SnippetEntry] { didSet { Persist.save(snippets, to: "snippets.json") } }
+    @Published var vocab: [VocabEntry] { didSet { if !isPreview { Persist.save(vocab, to: "dictionary.json") } } }
+    @Published var snippets: [SnippetEntry] { didSet { if !isPreview { Persist.save(snippets, to: "snippets.json") } } }
 
     // Per-app pinned styles: a bundle ID pinned here beats the global Style
     // picker AND auto-resolution — "Slack is always Chat, Xcode is always Raw".
-    @Published var appStyles: [AppStyleEntry] { didSet { Persist.save(appStyles, to: "appstyles.json") } }
+    @Published var appStyles: [AppStyleEntry] { didSet { if !isPreview { Persist.save(appStyles, to: "appstyles.json") } } }
 
     // Onboarding.
     @Published var hasOnboarded: Bool { didSet { defaults.set(hasOnboarded, forKey: "hasOnboarded") } }
 
     private let aiFormatter = AIFormatter()
-    private let defaults = UserDefaults.standard
+    private let defaults: UserDefaults
+    private let isPreview: Bool
 
     let availableModels = ModelCatalog.ids
 
@@ -127,9 +130,16 @@ final class AppModel: ObservableObject {
     // Held while recording so macOS App Nap can't throttle capture/UI mid-take.
     private var recordingActivity: NSObjectProtocol?
 
-    init() {
+    /// Preview models never read/write dictation files or start capture/model work.
+    /// Used by the opt-in screenshot renderer with fictional sample content.
+    init(preview: Bool = false) {
+        isPreview = preview
+        defaults = preview ? UserDefaults(suiteName: "com.justwisper.preview.\(UUID().uuidString)")! : .standard
         engine = WhisperEngine()
-        let d = UserDefaults.standard
+        let d = defaults
+        if let savedModel = d.string(forKey: "modelName"), ModelCatalog.ids.contains(savedModel) {
+            modelName = savedModel
+        }
         // AI polish is slow and mostly redundant (Whisper already punctuates well),
         // so it's opt-in. One-time migration flips it off for anyone who had the
         // old default-on behavior; explicit choices after this are respected.
@@ -144,10 +154,10 @@ final class AppModel: ObservableObject {
         formatMode = FormatMode(rawValue: d.string(forKey: "formatMode") ?? "") ?? .auto
         flowStyle = FlowBarStyle(rawValue: d.string(forKey: "flowStyle") ?? "") ?? .galley
         hasOnboarded = d.bool(forKey: "hasOnboarded")
-        vocab = Persist.load([VocabEntry].self, from: "dictionary.json") ?? []
-        snippets = Persist.load([SnippetEntry].self, from: "snippets.json") ?? []
-        appStyles = Persist.load([AppStyleEntry].self, from: "appstyles.json") ?? []
-        history = Persist.load([Dictation].self, from: "history.json") ?? []
+        vocab = preview ? [] : (Persist.load([VocabEntry].self, from: "dictionary.json") ?? [])
+        snippets = preview ? [] : (Persist.load([SnippetEntry].self, from: "snippets.json") ?? [])
+        appStyles = preview ? [] : (Persist.load([AppStyleEntry].self, from: "appstyles.json") ?? [])
+        history = preview ? [] : (Persist.load([Dictation].self, from: "history.json") ?? [])
         recorder.onLevel = { [weak self] value in self?.pushLevel(value) }
     }
 
@@ -288,7 +298,7 @@ final class AppModel: ObservableObject {
     // MARK: - Lifecycle
 
     func start() {
-        guard !hasStarted else { return }
+        guard !isPreview, !hasStarted else { return }
         hasStarted = true
 
         refreshAccessibility(prompt: false)
@@ -301,8 +311,9 @@ final class AppModel: ObservableObject {
         hotkey.onStart = { [weak self] in self?.beginRecording() }
         hotkey.onStop = { [weak self] in self?.endRecording() }
         hotkey.onHandsFreeChange = { [weak self] on in
-            self?.handsFree = on
-            self?.log(on ? "Hands-free on — tap Right ⌥ to stop." : "Hands-free off.")
+            guard let self, self.isRecording else { return }
+            self.handsFree = on
+            self.log(on ? "Hands-free on — tap Right ⌥ to stop." : "Hands-free off.")
         }
         hotkey.onCancel = { [weak self] in self?.cancelRecording() }   // ESC
         hotkey.start()
@@ -310,9 +321,16 @@ final class AppModel: ObservableObject {
         Task { await loadModel() }
     }
 
+    private var modelLoadInProgress = false
+
     private func loadModel() async {
+        guard !isPreview else { return }
+        guard !modelLoadInProgress, !isRecording, !isBusy else { return }
+        modelLoadInProgress = true
+        defer { modelLoadInProgress = false }
         state = .loading
         modelReady = false
+        let loadStarted = Date()
         let onDisk = engine.modelExistsOnDisk(modelName)
         downloadProgress = onDisk ? nil : 0
         let info = ModelCatalog.info(modelName)
@@ -327,7 +345,7 @@ final class AppModel: ObservableObject {
             downloadProgress = nil
             modelReady = true
             state = .idle
-            log("Model ready. Hold Right ⌥ to talk, or double-tap for hands-free.")
+            log(String(format: "Model ready in %.2fs. Hold Right ⌥ to talk, or double-tap for hands-free.", Date().timeIntervalSince(loadStarted)))
             // Warm the inference path in the background so the FIRST dictation
             // is as fast as every later one (first ANE pass is the slow one).
             Task { [engine] in await engine.warmUp() }
@@ -339,7 +357,7 @@ final class AppModel: ObservableObject {
     }
 
     func reloadModel(_ name: String) {
-        guard name != modelName else { return }
+        guard name != modelName, !isRecording, !isBusy, !modelLoadInProgress else { return }
         modelName = name
         Task { await loadModel() }
     }
@@ -348,6 +366,7 @@ final class AppModel: ObservableObject {
     /// we're recording or processing, hidden otherwise. Called from state's
     /// didSet so it can never drift out of sync with what's actually happening.
     private func syncOverlay() {
+        guard !isPreview else { return }
         switch state {
         case .recording, .transcribing, .formatting, .landed, .cancelled, .preview, .notice:
             overlay.show()
@@ -363,38 +382,49 @@ final class AppModel: ObservableObject {
     }
 
     func beginRecording() {
+        guard !isPreview else { return }
         // A new dictation can start right over the "landed ✓" confirmation
         // or an overlay preview.
         if landedAppName != nil { dismissLanded() }
         if isCancelled { discardCancelled() }
         if state == .preview { endPreview() }
+        if noticeText != nil, noticeReturn == .idle { dismissNotice() }
         guard state == .idle else {
             hotkey.reset()
             explainWhyNotReady()   // never refuse silently — the bar says why
             log("Ignored record request (state: \(statusText)).")
             return
         }
-        do {
-            beginActivity()
-            try recorder.start()
-            recordingStart = Date()
-            resetLevels()
-            partialText = ""
-            startClock()
-            startStreaming()
-            state = .recording            // didSet → overlay shows
-            playCue(.start)
-            if recorder.usingBluetoothMic {
-                log("Recording… (mic: \(recorder.deviceName)) — Bluetooth mic in use; playback may dip briefly. Connect wired audio or use the built-in mic to avoid this.")
-            } else {
-                log("Recording… (mic: \(recorder.deviceName))")
+        refreshMic()
+        guard micGranted else {
+            hotkey.reset()
+            if AVCaptureDevice.authorizationStatus(for: .audio) == .notDetermined {
+                requestMicrophone()
             }
-        } catch {
-            endActivity()
-            hotkey.reset()                // keep the key in sync after a failed start
-            state = .error("microphone")
-            log("Could not start microphone: \(error)")
+            showNotice("Allow microphone access in System Settings → Privacy & Security → Microphone, then try again.", returnTo: .idle)
+            return
         }
+        beginActivity()
+        recorder.start { [weak self] error in
+            guard let self, self.isRecording else { return }
+            _ = self.recorder.stop()
+            self.endActivity()
+            self.stopClock()
+            self.stopStreaming()
+            self.resetLevels()
+            self.handsFree = false
+            self.hotkey.reset()
+            self.showNotice("Microphone unavailable: \(error.localizedDescription)", returnTo: .idle)
+            self.log("Could not start microphone: \(error)")
+        }
+        recordingStart = Date()
+        resetLevels()
+        partialText = ""
+        startClock()
+        startStreaming()
+        state = .recording
+        playCue(.start)
+        log("Starting microphone capture…")
     }
 
     private func beginActivity() {
@@ -448,6 +478,7 @@ final class AppModel: ObservableObject {
         if samples.count > 16_000 / 4 {
             heldSamples = samples
             heldDuration = duration
+            heldTarget = focus.lastExternalApp
             state = .cancelled            // didSet → overlay stays up with Undo
             armTransientDismiss(after: 5.0)
             log(String(format: "Cancelled — %.1fs held for undo.", duration))
@@ -479,16 +510,16 @@ final class AppModel: ObservableObject {
             return
         }
 
-        deliver(samples: samples, duration: duration)
+        deliver(samples: samples, duration: duration, target: focus.lastExternalApp)
     }
 
     /// Transcribe → format → paste a captured take, ending in `.landed`/idle.
     /// Shared by a normal stop and by "Undo" on a cancelled take.
-    private func deliver(samples: [Float], duration: Double) {
+    private func deliver(samples: [Float], duration: Double, target: NSRunningApplication?) {
         state = .transcribing
         let stopped = Date()              // release-to-text latency starts here
         Task {
-            var landedIn: String?
+            var insertionResult: TextInjector.Result?
             do {
                 let result = try await engine.transcribe(samples, mode: .final)
                 let raw = result.text
@@ -497,7 +528,6 @@ final class AppModel: ObservableObject {
                 } else {
                     // Fast, deterministic formatting — always on, instant.
                     var text = cleanUp(raw)
-                    let target = focus.lastExternalApp
                     // Optional AI rewrite only when the user turned it on.
                     if aiFormatting {
                         state = .formatting
@@ -511,18 +541,27 @@ final class AppModel: ObservableObject {
                     transcript = text
                     history.insert(Dictation(text: text, date: Date(), duration: duration,
                                              latency: latency, appName: target?.localizedName), at: 0)
-                    log(String(format: "Transcribed in %.1fs: \"%@\"", latency, text))
-                    if autoPaste { landedIn = paste(text) }
+                    log(String(format: "Transcribed %d words in %.1fs.", text.split(whereSeparator: { $0.isWhitespace }).count, latency))
+                    if autoPaste { insertionResult = await paste(text, into: target) }
                     playCue(.done)
                 }
             } catch {
+                partialText = ""
                 log("Transcription FAILED: \(error)")
+                showNotice("Transcription failed: \(error.localizedDescription)", returnTo: .idle)
+                return
             }
             partialText = ""
-            if let landedIn {
-                showLanded(landedIn)      // brief ✓ on the flow bar, then idle
-            } else {
-                state = .idle             // didSet → overlay hides
+            switch insertionResult {
+            case .inserted:
+                showLanded(target?.localizedName ?? "the destination app")
+            case .pasteRequested:
+                showNotice("Paste sent to \(target?.localizedName ?? "the destination app"). If it didn't appear, copy from History.",
+                           returnTo: .idle, playSound: false)
+            case .failed(let message):
+                showNotice(message, returnTo: .idle)
+            case nil:
+                state = .idle
             }
         }
     }
@@ -531,6 +570,7 @@ final class AppModel: ObservableObject {
 
     private var heldSamples: [Float] = []
     private var heldDuration: Double = 0
+    private var heldTarget: NSRunningApplication?
 
     /// Recover an accidentally-cancelled take: transcribe the audio we held.
     func undoCancel() {
@@ -540,13 +580,16 @@ final class AppModel: ObservableObject {
         let duration = heldDuration
         heldSamples = []
         log("Undo — recovering the cancelled take.")
-        deliver(samples: samples, duration: duration)
+        let target = heldTarget
+        heldTarget = nil
+        deliver(samples: samples, duration: duration, target: target)
     }
 
     /// Let the cancelled take go for good (timer elapsed, ✕, or a new take).
     private func discardCancelled() {
         transientTimer?.cancel(); transientTimer = nil
         heldSamples = []
+        heldTarget = nil
         if isCancelled { state = .idle }
     }
 
@@ -576,11 +619,11 @@ final class AppModel: ObservableObject {
         }
     }
 
-    private func showNotice(_ message: String, returnTo: AppState, retry: Bool = false) {
+    private func showNotice(_ message: String, returnTo: AppState, retry: Bool = false, playSound: Bool = true) {
         noticeReturn = returnTo
         noticeCanRetry = retry
         state = .notice(message)          // didSet → overlay shows
-        playCue(.cancel)
+        if playSound { playCue(.cancel) }
         noticeTimer?.cancel()
         let work = DispatchWorkItem { [weak self] in self?.dismissNotice() }
         noticeTimer = work
@@ -729,25 +772,25 @@ final class AppModel: ObservableObject {
     /// The app + text of the most recent insertion, for undo.
     private var lastInsertion: (app: NSRunningApplication?, text: String)?
 
-    /// Insert into the focused app. Returns the app's name on success (drives
-    /// the "Landed in <app> ✓" confirmation), nil if the paste couldn't happen.
-    private func paste(_ text: String) -> String? {
+    /// Use the app captured when recording stopped, even if focus changed
+    /// while decoding. Only the AX path can confirm insertion succeeded.
+    private func paste(_ text: String, into target: NSRunningApplication?) async -> TextInjector.Result {
         refreshAccessibility(prompt: false)
-        if !accessibilityGranted {
-            log("Skipped paste — Accessibility not granted. Enable justwisper in System Settings ▸ Privacy & Security ▸ Accessibility.")
-            return nil
+        guard accessibilityGranted else {
+            return .failed("Enable Accessibility to insert text. Your transcript is available in History.")
         }
-        let target = focus.lastExternalApp
-        let ok = TextInjector.insert(text, into: target)
-        if ok {
+        let result = await TextInjector.insert(text, into: target)
+        switch result {
+        case .inserted:
             lastInsertion = (target, text)
-            let name = target?.localizedName ?? "the focused app"
-            log("Pasted into \(name).")
-            return name
-        } else {
-            log("Paste blocked — Accessibility permission missing.")
-            return nil
+            log("Inserted into \(target?.localizedName ?? "the destination app").")
+        case .pasteRequested:
+            lastInsertion = (target, text)
+            log("Paste requested in \(target?.localizedName ?? "the destination app"); delivery is not verified.")
+        case .failed(let message):
+            log("Insertion stopped: \(message)")
         }
+        return result
     }
 
     /// Which style applies right now: a per-app pin wins, then the global Style
@@ -762,14 +805,21 @@ final class AppModel: ObservableObject {
 
     /// Re-insert an existing transcript into the last focused app.
     func reinsert(_ text: String) {
-        refreshAccessibility(prompt: false)
-        guard accessibilityGranted else {
-            refreshAccessibility(prompt: true)
-            log("Grant Accessibility to insert into other apps.")
-            return
+        guard !isPreview, !isRecording, !isBusy else { return }
+        let target = focus.lastExternalApp
+        Task {
+            let result = await paste(text, into: target)
+            // Don't replace an overlay if a new recording started in the meantime.
+            guard state == .idle else { return }
+            switch result {
+            case .inserted:
+                showLanded(target?.localizedName ?? "the destination app")
+            case .pasteRequested:
+                showNotice("Paste requested. If it didn't appear, copy from History.", returnTo: .idle, playSound: false)
+            case .failed(let message):
+                showNotice(message, returnTo: .idle)
+            }
         }
-        _ = TextInjector.insert(text, into: focus.lastExternalApp)
-        log("Re-inserted into \(focus.lastExternalApp?.localizedName ?? "the focused app").")
     }
 
     // MARK: - Clock
@@ -800,7 +850,7 @@ final class AppModel: ObservableObject {
             while !Task.isCancelled {
                 try? await Task.sleep(nanoseconds: 900_000_000)
                 guard let self, !Task.isCancelled, self.isRecording else { break }
-                let samples = self.recorder.snapshot()
+                let samples = self.recorder.snapshot(maxSamples: TranscriptionTuning.previewSampleLimit)
                 guard samples.count > 16_000 / 2 else { continue }
                 if let result = try? await self.engine.transcribe(samples, mode: .streaming),
                    !Task.isCancelled, self.isRecording, !result.text.isEmpty {

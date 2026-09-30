@@ -1,76 +1,87 @@
 # Contributing to justwisper
 
-Thanks for wanting to help! justwisper is a small, native macOS app and it's
-built to be easy to hack on. This guide gets you from clone to running in a
-couple of minutes.
+Thanks for helping make a small Mac tool better. Improvements to the everyday recording → transcription → insertion loop are especially useful.
 
-## Prerequisites
+## Build and run
 
-- **Apple Silicon Mac, macOS 14+**
-- **Xcode 15+** (or the Command Line Tools) — check with `swift --version`
-- Internet **once** to download the Whisper model on first launch (~150 MB, cached)
-
-## Build & run
+Use an Apple Silicon Mac running macOS 14+ with **Swift 6.2+ / Xcode 26+**. The committed dependency lockfile is required; CI selects Xcode 26.2 explicitly. The first speech-model setup needs internet; cached models run locally.
 
 ```bash
 git clone https://github.com/dhirajcdry/justwisper.git
 cd justwisper
-./setup-signing.sh   # one time: a stable local cert so macOS keeps your
-                     # Accessibility/Mic grants across rebuilds
-./build.sh           # compiles + assembles justwisper.app
+./setup-signing.sh  # optional, once: stable local signing across rebuilds
+./build.sh
 open ./justwisper.app
 ```
 
-Run the binary directly to watch logs:
+Without the local signing setup, builds fall back to ad-hoc signing and macOS may require you to re-enable Microphone/Accessibility after a rebuild. The local identity is not Apple Developer ID signing or notarization.
+
+For diagnostic output, quit any running copy and launch the executable directly:
 
 ```bash
 ./justwisper.app/Contents/MacOS/Wispr
 ```
 
-On first launch, grant **Microphone** and **Accessibility** when prompted.
+Older builds logged dictated text. Current builds log word counts/timings, but diagnostic errors can still include identifying context. Use non-sensitive examples and redact anything private before sharing output.
 
-> Skipping `setup-signing.sh` falls back to ad-hoc signing, and macOS will make
-> you re-grant Accessibility after every rebuild. Run it once and that goes away.
+## Validation
 
-## Project layout
+```bash
+swift test
+swift build -c release
+./scripts/smoke-dictation.sh # optional: local synthetic speech + cached Base model; needs FFmpeg
+```
 
-Everything is in `Sources/Wispr/`. A few good entry points:
+The default suite covers hotkey gestures, model-cache selection, and preview decoding settings. The hardware/model and screenshot tests are opt-in:
 
-| Area | Files |
-|------|-------|
-| App entry & menu bar | `App.swift`, `AppModel.swift` |
-| Hotkey (hold / double-tap / Esc) | `HotkeyMonitor.swift` |
-| Mic capture | `AudioRecorder.swift` |
-| Transcription engine | `WhisperEngine.swift`, `TranscriptionEngine.swift` |
-| Paste into other apps | `TextInjector.swift`, `FocusTracker.swift` |
-| Formatting pipeline | `TextFormatter.swift`, `TranscriptCleaner.swift`, `FormatMode.swift` |
-| The floating overlay | `FlowBar.swift`, `FlowBarStyle.swift`, `OverlayController.swift` |
-| Screens | `HomeView.swift`, `HistoryView.swift`, `InsightsView.swift`, `SettingsView.swift`, … |
-| Design tokens | `Theme.swift` (the "Press" palette + fonts) |
+```bash
+# Requires an already downloaded Base model. Uses synthetic silence, no microphone.
+# Tokenizer files may download once if the new app-managed cache is empty.
+WISPR_MODEL_SMOKE=1 swift test --filter EngineSmokeTests
 
-## Good first contributions
+# Render real SwiftUI views with fictional fixtures, isolated from your history.
+WISPR_SCREENSHOT_DIR="$PWD/site/assets/screenshots" swift test --filter ScreenshotTests
 
-- **New overlay style** — add a case to `FlowBarStyle` and render it in `FlowBar`.
-- **Formatting rules** — voice commands, filler/stutter handling in `TextFormatter`.
-- **Language tuning** — dictionary defaults, model options in `ModelCatalog`.
-- **Bug fixes & polish** — anything in the issues list.
+# Check documentation and local site asset paths.
+python3 scripts/check-site.py
+```
 
-## Submitting a change
+For recording changes, also exercise a real hold-to-talk and hands-free take, Esc/Undo, and insertion into a normal text field. Automated synthetic events don't prove every physical keyboard, permission state, and microphone works.
 
-1. Fork the repo and create a branch: `git checkout -b my-change`.
-2. Make your change. **Match the surrounding code** — naming, comment density,
-   and the SwiftUI idioms already in use. Keep the "Press" look consistent
-   (use the `Palette`/`F` tokens in `Theme.swift`, not hardcoded colors/fonts).
-3. Build and test the affected flow end-to-end (dictate → paste → confirm).
-4. Open a pull request describing what changed and why. Screenshots/screen
-   recordings are hugely appreciated for UI changes.
+## Where to look
 
-## Reporting bugs
+| Area | Entry points |
+| --- | --- |
+| App lifecycle and state | `App.swift`, `AppModel.swift` |
+| Right Option gestures | `HotkeyMonitor.swift` |
+| Microphone/session queues | `AudioRecorder.swift` |
+| Local speech pipeline | `WhisperEngine.swift`, `TranscriptionEngine.swift` |
+| Cache discovery and preview options | `ModelCache.swift`, `TranscriptionTuning.swift` |
+| Text insertion | `TextInjector.swift`, `FocusTracker.swift` |
+| Cleanup and formatting | `TextFormatter.swift`, `TranscriptCleaner.swift`, `FormatMode.swift` |
+| Floating bar | `FlowBar.swift`, `FlowBarStyle.swift`, `OverlayController.swift` |
+| Visual system | `Theme.swift`, `Components.swift` |
+| Local persistence | `Store.swift` |
+| Static website | `site/index.html`, `site/style.css`, `site/app.js` |
 
-Open an [issue](https://github.com/dhirajcdry/justwisper/issues) with your macOS
-version, Mac model, steps to reproduce, and what you expected vs. what happened.
-Log output (from running the binary directly) helps a lot.
+Use the existing `Palette` and `F` typography helpers for native UI changes. Preserve the app's warm paper, dark ink, and orange accent. For screenshots and the website, see [asset generation](docs/ASSETS.md).
 
-## Code of conduct
+## Useful contributions
 
-Be kind and constructive. We're all here to make a nice tool.
+- Reproducible reliability reports with Mac, macOS, microphone, and target-app details.
+- Tests for gesture or state transitions that previously broke.
+- Accessibility and keyboard-navigation improvements.
+- Language/model testing with non-sensitive examples.
+- Clearer setup instructions when a real user gets stuck.
+
+## Submit a change
+
+1. Fork the repository and create a focused branch.
+2. Describe the user-visible problem and the resulting behavior.
+3. Run relevant tests and the release build. Add regression coverage for a behavioral fix.
+4. Include screenshots or a short recording for UI changes. Use fictional content.
+5. Open a pull request with the checks you actually ran and any remaining limitations.
+
+Keep signing keys, credentials, personal history, and generated build products out of commits. Don't change unrelated settings or reformat the whole project for a small fix. Be kind and constructive in reviews.
+
+For release packaging and deployment, see [Releasing](docs/RELEASING.md). For vulnerability reports, see [Security](SECURITY.md).

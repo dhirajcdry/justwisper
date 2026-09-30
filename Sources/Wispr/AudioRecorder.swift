@@ -17,6 +17,9 @@ final class AudioRecorder: NSObject, AVCaptureAudioDataOutputSampleBufferDelegat
     private let lock = NSLock()
     private var samples: [Float] = []
     private var configured = false
+    private var acceptingSamples = false
+    private var generation = 0
+    private var runtimeErrorObserver: NSObjectProtocol?
 
     private let targetFormat = AVAudioFormat(
         commonFormat: .pcmFormatFloat32,
@@ -26,39 +29,79 @@ final class AudioRecorder: NSObject, AVCaptureAudioDataOutputSampleBufferDelegat
     )!
 
     /// The mic that will be used, for display/logging.
-    private(set) var deviceName: String = "default"
+    private var inputDeviceName = "default"
+    var deviceName: String { lock.withLock { inputDeviceName } }
 
     /// Session start/stop run here, never on the main thread — `startRunning()`
     /// and `stopRunning()` block (hundreds of ms cold), which otherwise stalls
     /// the flow bar appearing and makes the stop button feel unresponsive.
     private let sessionQueue = DispatchQueue(label: "ai.wispr.session")
 
-    func start() throws {
-        lock.withLock { samples.removeAll(keepingCapacity: true) }
-
-        if !configured {
-            try configure()          // one-time; must succeed before we run.
-            configured = true
+    func start(onError: @escaping (Error) -> Void) {
+        let take = lock.withLock { () -> Int in
+            generation += 1
+            acceptingSamples = false
+            samples.removeAll(keepingCapacity: true)
+            return generation
         }
-        sessionQueue.async { [session] in
-            if !session.isRunning { session.startRunning() }
+        sessionQueue.async { [self] in
+            guard lock.withLock({ generation == take }) else { return }
+            do {
+                if !configured {
+                    session.beginConfiguration()
+                    for input in session.inputs { session.removeInput(input) }
+                    for output in session.outputs { session.removeOutput(output) }
+                    session.commitConfiguration()
+                    try configure()
+                    configured = true
+                }
+                if let observer = runtimeErrorObserver { NotificationCenter.default.removeObserver(observer) }
+                runtimeErrorObserver = NotificationCenter.default.addObserver(
+                    forName: .AVCaptureSessionRuntimeError, object: session, queue: nil
+                ) { [weak self] notification in
+                    let error = notification.userInfo?[AVCaptureSessionErrorKey] as? Error
+                        ?? NSError(domain: "Wispr", code: 5, userInfo: [NSLocalizedDescriptionKey: "Microphone capture stopped unexpectedly."])
+                    self?.sessionQueue.async { [weak self] in self?.configured = false }
+                    DispatchQueue.main.async {
+                        guard let self, self.lock.withLock({ self.generation == take }) else { return }
+                        onError(error)
+                    }
+                }
+                // Drain callbacks from the previous session before accepting a new take.
+                queue.sync { converter = nil }
+                lock.withLock { acceptingSamples = generation == take }
+                if !session.isRunning { session.startRunning() }
+                guard session.isRunning else {
+                    throw NSError(domain: "Wispr", code: 4,
+                                  userInfo: [NSLocalizedDescriptionKey: "The microphone could not start. Check microphone access and reconnect your input device."])
+                }
+            } catch {
+                configured = false
+                lock.withLock { if generation == take { acceptingSamples = false } }
+                DispatchQueue.main.async { [self] in
+                    guard lock.withLock({ generation == take }) else { return }
+                    onError(error)
+                }
+            }
         }
     }
 
     func stop() -> [Float] {
-        // Grab what we've captured right now, then tear the session down off the
-        // main thread so the UI (and the ✓/✕ buttons) respond instantly.
-        let captured = lock.withLock { samples }
+        let captured = lock.withLock { () -> [Float] in
+            acceptingSamples = false
+            generation += 1
+            return samples
+        }
         sessionQueue.async { [session] in
             if session.isRunning { session.stopRunning() }
         }
         return captured
     }
 
-    /// A copy of everything captured so far — used for live streaming transcription
-    /// while recording is still in progress.
-    func snapshot() -> [Float] {
-        lock.withLock { samples }
+    /// Preview only the recent audio so work stays bounded during long takes.
+    /// stop() still returns the full recording for the final transcription.
+    func snapshot(maxSamples: Int) -> [Float] {
+        lock.withLock { Array(samples.suffix(max(0, maxSamples))) }
     }
 
     // MARK: - Setup
@@ -68,13 +111,12 @@ final class AudioRecorder: NSObject, AVCaptureAudioDataOutputSampleBufferDelegat
             throw NSError(domain: "Wispr", code: 1,
                           userInfo: [NSLocalizedDescriptionKey: "No microphone found"])
         }
-        deviceName = device.localizedName
-
-        session.beginConfiguration()
+        lock.withLock { inputDeviceName = device.localizedName }
 
         let input = try AVCaptureDeviceInput(device: device)
+        session.beginConfiguration()
+        defer { session.commitConfiguration() }
         guard session.canAddInput(input) else {
-            session.commitConfiguration()
             throw NSError(domain: "Wispr", code: 2,
                           userInfo: [NSLocalizedDescriptionKey: "Cannot add mic input"])
         }
@@ -89,13 +131,17 @@ final class AudioRecorder: NSObject, AVCaptureAudioDataOutputSampleBufferDelegat
             AVLinearPCMIsBigEndianKey: false
         ]
         output.setSampleBufferDelegate(self, queue: queue)
-        if session.canAddOutput(output) { session.addOutput(output) }
-
-        session.commitConfiguration()
+        guard session.canAddOutput(output) else {
+            session.removeInput(input)
+            throw NSError(domain: "Wispr", code: 3,
+                          userInfo: [NSLocalizedDescriptionKey: "Cannot add microphone output"])
+        }
+        session.addOutput(output)
     }
 
     /// True when the chosen mic is a Bluetooth device (playback may briefly drop).
-    private(set) var usingBluetoothMic = false
+    private var bluetoothMic = false
+    var usingBluetoothMic: Bool { lock.withLock { bluetoothMic } }
 
     /// Choose a mic that won't disturb playback. Bluetooth mics force the device
     /// from A2DP (hi-fi) to HFP (call quality), stuttering whatever's playing, so
@@ -130,7 +176,7 @@ final class AudioRecorder: NSObject, AVCaptureAudioDataOutputSampleBufferDelegat
             // 4) Last resort: whatever exists (may be Bluetooth → can interrupt).
             ?? devices.first
 
-        usingBluetoothMic = chosen.map(isBluetooth) ?? false
+        lock.withLock { bluetoothMic = chosen.map(isBluetooth) ?? false }
         return chosen
     }
 
@@ -182,6 +228,7 @@ final class AudioRecorder: NSObject, AVCaptureAudioDataOutputSampleBufferDelegat
     func captureOutput(_ output: AVCaptureOutput,
                        didOutput sampleBuffer: CMSampleBuffer,
                        from connection: AVCaptureConnection) {
+        guard lock.withLock({ acceptingSamples }) else { return }
         guard let formatDescription = CMSampleBufferGetFormatDescription(sampleBuffer),
               let asbdPointer = CMAudioFormatDescriptionGetStreamBasicDescription(formatDescription)
         else { return }
@@ -238,6 +285,8 @@ final class AudioRecorder: NSObject, AVCaptureAudioDataOutputSampleBufferDelegat
         let n = Int(out.frameLength)
         guard n > 0, let ch = out.floatChannelData else { return }
         let chunk = Array(UnsafeBufferPointer(start: ch[0], count: n))
-        lock.withLock { samples.append(contentsOf: chunk) }
+        lock.withLock {
+            if acceptingSamples { samples.append(contentsOf: chunk) }
+        }
     }
 }

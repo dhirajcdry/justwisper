@@ -1,0 +1,41 @@
+name: Bug report
+description: Help reproduce a dictation, shortcut, or setup problem
+title: "[Bug]: "
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: "Thanks for helping improve justwisper. Please use sample text and remove personal transcripts, credentials, and private paths from logs or screenshots."
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: What happened, and how can we reproduce it?
+      description: Include the exact shortcut or button sequence, what you expected, and what happened instead.
+    validations:
+      required: true
+  - type: input
+    id: environment
+    attributes:
+      label: Mac model, macOS version, and justwisper version
+      placeholder: "MacBook Air M2 / macOS 15.x / justwisper 0.2.0"
+    validations:
+      required: true
+  - type: input
+    id: setup
+    attributes:
+      label: Speech model, microphone, and destination app
+      placeholder: "Base / built-in microphone / Notes"
+  - type: dropdown
+    id: permissions
+    attributes:
+      label: Are Microphone and Accessibility permissions enabled?
+      options:
+        - "Yes, both"
+        - "Only one"
+        - "Neither"
+        - "Not sure"
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Relevant error, redacted log, or sample recording
+      description: If the whole process exits, a redacted crash report is useful. If only the overlay disappears, say so.

@@ -9,21 +9,37 @@ actor WhisperEngine: TranscriptionEngine {
     private var pipe: WhisperKit?
     private var loadedModel: String?
 
+    // Actors are reentrant across await: a streaming decode, final decode, and
+    // warm-up could otherwise use the same mutable WhisperKit pipeline at once.
+    private var pipelineBusy = false
+    private var pipelineWaiters: [CheckedContinuation<Void, Never>] = []
+
+    private func acquirePipeline() async {
+        if !pipelineBusy {
+            pipelineBusy = true
+            return
+        }
+        await withCheckedContinuation { pipelineWaiters.append($0) }
+    }
+
+    private func releasePipeline() {
+        if pipelineWaiters.isEmpty { pipelineBusy = false }
+        else { pipelineWaiters.removeFirst().resume() }
+    }
+
     nonisolated var modelsDirectory: URL {
         let base = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first!
         return base.appendingPathComponent("Wispr/Models", isDirectory: true)
     }
 
     nonisolated func modelExistsOnDisk(_ model: String) -> Bool {
-        let fm = FileManager.default
-        guard let items = fm.enumerator(at: modelsDirectory, includingPropertiesForKeys: nil) else { return false }
-        for case let url as URL in items {
-            if url.pathExtension == "mlmodelc", url.path.contains(model) { return true }
-        }
-        return false
+        ModelCache.cachedFolder(for: model, in: modelsDirectory) != nil
     }
 
     func prepare(model: String, progress: @escaping @Sendable (Double) -> Void) async throws {
+        await acquirePipeline()
+        defer { releasePipeline() }
+        try Task.checkCancellation()
         if loadedModel == model, pipe != nil {
             progress(1)
             return
@@ -34,15 +50,23 @@ actor WhisperEngine: TranscriptionEngine {
 
         try FileManager.default.createDirectory(at: modelsDirectory, withIntermediateDirectories: true)
 
-        // Download with progress (skips files already present), then load from disk.
-        let folder = try await WhisperKit.download(variant: model, downloadBase: modelsDirectory) { p in
-            progress(p.fractionCompleted)
+        let cachedFolder = ModelCache.cachedFolder(for: model, in: modelsDirectory)
+        let folder: URL
+        if let cachedFolder {
+            folder = cachedFolder
+        } else {
+            folder = try await WhisperKit.download(variant: model, downloadBase: modelsDirectory) { p in
+                progress(p.fractionCompleted)
+            }
         }
 
         let config = WhisperKitConfig(
             model: model,
             modelFolder: folder.path,
-            prewarm: true,   // compile for the Neural Engine up front, not on first dictation
+            tokenizerFolder: modelsDirectory.appendingPathComponent("Tokenizers", isDirectory: true),
+            // Tiny/Base can load directly on repeat launches. Keep the
+            // memory-saving load/unload pass for first loads and larger models.
+            prewarm: cachedFolder == nil || !["tiny.en", "base.en"].contains(model),
             load: true,
             download: false
         )
@@ -59,6 +83,9 @@ actor WhisperEngine: TranscriptionEngine {
     }
 
     func transcribe(_ samples: [Float], mode: TranscribeMode) async throws -> TranscriptionResult {
+        await acquirePipeline()
+        defer { releasePipeline() }
+        try Task.checkCancellation()
         guard let pipe else { throw EngineError.notReady }
         var callback: TranscriptionCallback = nil
         if mode == .streaming {
@@ -68,7 +95,7 @@ actor WhisperEngine: TranscriptionEngine {
             let flag = streamAbort
             callback = { _ in flag.isSet ? false : nil }
         }
-        let results = try await pipe.transcribe(audioArray: samples, decodeOptions: nil, callback: callback)
+        let results = try await pipe.transcribe(audioArray: samples, decodeOptions: TranscriptionTuning.options(for: mode), callback: callback)
         let joined = results
             .map(\.text)
             .joined(separator: " ")

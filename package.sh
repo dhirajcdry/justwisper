@@ -9,6 +9,7 @@
 #   ./package.sh universal  # arm64 + x86_64 (also runs on Intel; slower build)
 set -euo pipefail
 cd "$(dirname "$0")"
+./scripts/check-toolchain.sh
 
 # Build into dist/ so this NEVER clobbers the dev-signed build.sh output — an
 # ad-hoc app in the project root would break the Accessibility grant.
@@ -39,6 +40,7 @@ cp Resources/Info.plist "$APP/Contents/Info.plist"
 if [ -d Resources/Fonts ]; then
     mkdir -p "$APP/Contents/Resources/Fonts"
     cp Resources/Fonts/*.ttf "$APP/Contents/Resources/Fonts/" 2>/dev/null || true
+    cp Resources/Fonts/*OFL.txt "$APP/Contents/Resources/Fonts/"
 fi
 if compgen -G "$BIN_DIR/"*.bundle > /dev/null; then
     cp -R "$BIN_DIR/"*.bundle "$APP/Contents/Resources/"
@@ -60,9 +62,11 @@ rm -rf "$STAGING"
 
 echo
 echo "==> Done → ${DMG} ($(du -h "$DMG" | cut -f1))"
-shasum -a 256 "$DMG"
+(cd "$DIST" && shasum -a 256 "$(basename "$DMG")" > SHA256SUMS)
+cat "$DIST/SHA256SUMS"
 echo
 echo "First-launch instructions for downloaders (unsigned build):"
 echo "  1. Open the .dmg and drag justwisper into Applications."
-echo "  2. Run once:  xattr -dr com.apple.quarantine /Applications/justwisper.app"
+echo "  2. If blocked, use System Settings > Privacy & Security > Open Anyway."
+echo "     See docs/TROUBLESHOOTING.md for first-launch details."
 echo "  3. Launch it, then grant Microphone + Accessibility when asked."
