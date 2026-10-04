@@ -23,6 +23,7 @@
 - Bound live preview work to recent audio, with cheaper preview decoding; preserve full-take final transcription.
 
 - Default to Small and retain the user’s selected model across launches.
+- Render History rows lazily so opening the page does not lay out every transcript.
 - Cache history word counts and avoid redraws for unchanged microphone permissions.
 - Limit UI metering to about 17 updates per second without reducing recorded audio.
 - Keep focus tracking and overlay dismissal on the main actor.

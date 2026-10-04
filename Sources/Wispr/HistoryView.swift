@@ -9,7 +9,9 @@ struct HistoryView: View {
         VStack(spacing: 0) {
             ScreenHeader(model: model, title: "History")
             ScrollView {
-                VStack(alignment: .leading, spacing: 0) {
+                // Long transcripts are expensive to lay out. Only materialize
+                // rows near the viewport instead of the entire saved history.
+                LazyVStack(alignment: .leading, spacing: 0) {
                     HStack(alignment: .bottom) {
                         Text("Every word\nyou've spoken.")
                             .font(F.extrabold(40)).tracking(-1.4).lineSpacing(-4)
