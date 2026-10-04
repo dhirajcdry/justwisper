@@ -73,7 +73,7 @@ Ticker and Proof are also available in Settings. All four styles can be repositi
 1. **Download** the DMG from [GitHub Releases](https://github.com/dhirajcdry/justwisper/releases/tag/v0.2.0). Open it and drag **justwisper** into **Applications**.
 2. **Open the app.** Community builds are ad-hoc signed and **not notarized**. If macOS blocks the first launch, go to **System Settings → Privacy & Security → Open Anyway** after trying to open it. Only approve a download you trust. [Apple’s first-launch guide](https://support.apple.com/en-us/102445).
 3. **Grant Microphone and Accessibility.** Microphone captures your voice; Accessibility enables the global shortcut and insertion into other apps.
-4. **Let the model finish setting up.** Base is the default. First setup needs internet for the model and tokenizer files; later launches reuse them.
+4. **Let the model finish setting up.** Small is the default. First setup needs internet for the model and tokenizer files; later launches reuse them.
 5. **Focus a text field. Hold Right ⌥, speak, then release.**
 
 If the supported first-launch flow doesn’t work, see [Troubleshooting](docs/TROUBLESHOOTING.md). Release assets include a SHA-256 checksum so you can verify the downloaded file.
@@ -96,8 +96,8 @@ The trigger is the **right-hand Option key**, not the right mouse button. Keep t
 | Model | Language | Best starting point for |
 | --- | --- | --- |
 | Tiny | English | The smallest model and lighter inference work |
-| **Base** · default | English | Everyday dictation |
-| Small | English | Trying a larger English model when Base misses words |
+| Base | English | Everyday dictation |
+| **Small** · default | English | Trying a larger English model when Base misses words |
 | Turbo | Multilingual | Dictating in languages beyond English |
 
 Model download sizes and speed vary by variant. The app shows an estimated size before selection. Your selection survives relaunches. A full quit unloads the model from memory; reopening loads the cached files again.
@@ -124,10 +124,12 @@ Found a rough edge? [Report it](https://github.com/dhirajcdry/justwisper/issues/
 git clone https://github.com/dhirajcdry/justwisper.git
 cd justwisper
 ./build.sh
-open ./justwisper.app
+open /Applications/justwisper.app
 ```
 
-Building requires **Swift 6.2+ (Xcode 26+)** because of the locked dependencies; running the app still targets macOS 14+. To retain local permissions across rebuilds, run `./setup-signing.sh` once before building. This creates a local development identity; it is not Apple Developer ID signing or notarization.
+`./build.sh` signs and replaces `/Applications/justwisper.app`. It stops any running copy before installation and leaves no app bundle in the project folder. Local builds use password-free ad-hoc signing; macOS may require permissions again after a rebuild. Set `WISPR_SIGN_IDENTITY="Wispr Dev"` to opt into a configured stable signing identity.
+
+Building requires **Swift 6.2+ (Xcode 26+)** because of the locked dependencies; running the app still targets macOS 14+. To retain local permissions across rebuilds, run `./setup-signing.sh` once and use `WISPR_SIGN_IDENTITY="Wispr Dev" ./build.sh`. This creates a local development identity; it is not Apple Developer ID signing or notarization.
 
 ```bash
 swift test                 # regression suite; no microphone required

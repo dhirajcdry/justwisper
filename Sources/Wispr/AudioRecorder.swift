@@ -14,6 +14,9 @@ final class AudioRecorder: NSObject, AVCaptureAudioDataOutputSampleBufferDelegat
     private let queue = DispatchQueue(label: "ai.wispr.audio")
 
     private var converter: AVAudioConverter?
+    // Accessed only on the audio callback queue. Audio capture stays full-rate;
+    // UI metering needs at most ~17 updates/second, regardless of buffer size.
+    private var lastMeterUpdate: TimeInterval = 0
     private let lock = NSLock()
     private var samples: [Float] = []
     private var configured = false
@@ -252,6 +255,9 @@ final class AudioRecorder: NSObject, AVCaptureAudioDataOutputSampleBufferDelegat
     }
 
     private func meter(_ buffer: AVAudioPCMBuffer) {
+        let now = ProcessInfo.processInfo.systemUptime
+        guard now - lastMeterUpdate >= 0.06 else { return }
+        lastMeterUpdate = now
         let frames = Int(buffer.frameLength)
         guard frames > 0, let channel = buffer.floatChannelData else { return }
         let data = channel[0]

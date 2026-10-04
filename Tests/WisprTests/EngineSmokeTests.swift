@@ -3,21 +3,22 @@ import AVFoundation
 @testable import Wispr
 
 final class EngineSmokeTests: XCTestCase {
+    private let model = ProcessInfo.processInfo.environment["WISPR_SMOKE_MODEL"] ?? "small.en"
     /// Explicit opt-in: uses a locally cached model, never records microphone audio.
     func testCachedModelLoadsAndTranscribes() async throws {
         guard ProcessInfo.processInfo.environment["WISPR_MODEL_SMOKE"] == "1" else {
             throw XCTSkip("Set WISPR_MODEL_SMOKE=1 to run local Core ML inference.")
         }
         let engine = WhisperEngine()
-        guard engine.modelExistsOnDisk("base.en") else {
-            throw XCTSkip("Requires an already downloaded base.en model.")
+        guard engine.modelExistsOnDisk(model) else {
+            throw XCTSkip("Requires an already downloaded \(model) model.")
         }
         let started = Date()
-        try await engine.prepare(model: "base.en") { _ in }
-        print(String(format: "Cached Base model loaded in %.2fs", Date().timeIntervalSince(started)))
+        try await engine.prepare(model: model) { _ in }
+        print(String(format: "Cached \(model) model loaded in %.2fs", Date().timeIntervalSince(started)))
         let reused = Date()
-        try await engine.prepare(model: "base.en") { _ in }
-        print(String(format: "In-memory Base model reused in %.4fs", Date().timeIntervalSince(reused)))
+        try await engine.prepare(model: model) { _ in }
+        print(String(format: "In-memory \(model) model reused in %.4fs", Date().timeIntervalSince(reused)))
         _ = try await engine.transcribe(Array(repeating: 0, count: 16_000), mode: .streaming)
         _ = try await engine.transcribe(Array(repeating: 0, count: 16_000), mode: .final)
     }
@@ -28,7 +29,7 @@ final class EngineSmokeTests: XCTestCase {
             throw XCTSkip("Set WISPR_SMOKE_AUDIO to a generated 16 kHz mono speech fixture.")
         }
         let engine = WhisperEngine()
-        guard engine.modelExistsOnDisk("base.en") else { throw XCTSkip("Base model is not cached.") }
+        guard engine.modelExistsOnDisk(model) else { throw XCTSkip("\(model) model is not cached.") }
         let file = try AVAudioFile(forReading: URL(fileURLWithPath: path),
                                   commonFormat: .pcmFormatFloat32, interleaved: false)
         XCTAssertEqual(file.processingFormat.sampleRate, 16_000)
@@ -42,7 +43,7 @@ final class EngineSmokeTests: XCTestCase {
         try file.read(into: buffer)
         let channel = try XCTUnwrap(buffer.floatChannelData?[0])
         let samples = Array(UnsafeBufferPointer(start: channel, count: Int(buffer.frameLength)))
-        try await engine.prepare(model: "base.en") { _ in }
+        try await engine.prepare(model: model) { _ in }
         let result = try await engine.transcribe(samples, mode: .final)
         XCTAssertTrue(result.text.lowercased().contains("local dictation test"),
                       "Expected the locally generated sample phrase to be recognized.")

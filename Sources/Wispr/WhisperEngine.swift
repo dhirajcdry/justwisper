@@ -64,9 +64,9 @@ actor WhisperEngine: TranscriptionEngine {
             model: model,
             modelFolder: folder.path,
             tokenizerFolder: modelsDirectory.appendingPathComponent("Tokenizers", isDirectory: true),
-            // Tiny/Base can load directly on repeat launches. Keep the
+            // Tiny/Base/Small can load directly on repeat launches. Keep the
             // memory-saving load/unload pass for first loads and larger models.
-            prewarm: cachedFolder == nil || !["tiny.en", "base.en"].contains(model),
+            prewarm: cachedFolder == nil || !["tiny.en", "base.en", "small.en"].contains(model),
             load: true,
             download: false
         )

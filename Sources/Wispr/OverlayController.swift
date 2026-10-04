@@ -90,8 +90,10 @@ final class OverlayController {
             panel.animator().alphaValue = 0
         } completionHandler: { [weak self] in
             // Only order out if no newer show/hide happened in the meantime.
-            guard let self, self.hideToken == token, !self.visible else { return }
-            panel.orderOut(nil)
+            Task { @MainActor in
+                guard let self, self.hideToken == token, !self.visible else { return }
+                panel.orderOut(nil)
+            }
         }
     }
 

@@ -8,7 +8,7 @@ The working tree prepares **0.2.0** with the reliability/startup fixes and publi
 
 1. Check [release readiness](RELEASE_READINESS.md), then review changes, including the README, screenshots, privacy claims, and changelog. Confirm screenshots contain only the documented fixtures.
 2. Run `swift test` and `swift build -c release` on macOS.
-3. If the Base model is already cached, run `WISPR_MODEL_SMOKE=1 swift test --filter EngineSmokeTests` for real local model loading and inference. The smoke test uses synthetic silence, never the microphone.
+3. If the Small model is already cached, run `WISPR_MODEL_SMOKE=1 swift test --filter EngineSmokeTests` for real local model loading and inference. The smoke test uses synthetic silence, never the microphone.
 4. Check a real hold-to-talk and hands-free dictation into a normal text field. Include a cancellation/undo and a failed-permission path. Automated tests do not replace this hardware check.
 5. Set the version/build number in `Resources/Info.plist`, then run `./package.sh`.
 6. Verify `dist/SHA256SUMS` with `cd dist && shasum -a 256 -c SHA256SUMS`. Inspect/mount the DMG and confirm it includes the app and Applications shortcut.

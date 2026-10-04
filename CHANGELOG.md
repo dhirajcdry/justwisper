@@ -19,8 +19,19 @@
 - Load complete cached models directly instead of entering the download lookup on every launch.
 - Store tokenizer files under Application Support rather than the default Documents cache.
 - Persist the selected model and log its load time.
-- Skip the extra prewarming pass for cached Tiny and Base models.
+- Skip the extra prewarming pass for cached Tiny, Base, and Small models.
 - Bound live preview work to recent audio, with cheaper preview decoding; preserve full-take final transcription.
+
+- Default to Small and retain the user’s selected model across launches.
+- Cache history word counts and avoid redraws for unchanged microphone permissions.
+- Limit UI metering to about 17 updates per second without reducing recorded audio.
+- Keep focus tracking and overlay dismissal on the main actor.
+
+### Local installation
+
+- Install builds into `/Applications/justwisper.app`, replacing the prior version after signing succeeds.
+- Use password-free ad-hoc signing by default; stable signing remains an explicit option.
+- Clean up temporary app bundles after builds and release packaging.
 
 ### Project and presentation
 

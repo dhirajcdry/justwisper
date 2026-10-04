@@ -16,10 +16,13 @@ final class FocusTracker {
             object: nil,
             queue: .main
         ) { [weak self] note in
-            guard let self else { return }
-            if let app = note.userInfo?[NSWorkspace.applicationUserInfoKey] as? NSRunningApplication,
-               !self.isSelf(app) {
-                self.lastExternalApp = app
+            // NotificationCenter delivers this observer on OperationQueue.main.
+            MainActor.assumeIsolated {
+                guard let self else { return }
+                if let app = note.userInfo?[NSWorkspace.applicationUserInfoKey] as? NSRunningApplication,
+                   !self.isSelf(app) {
+                    self.lastExternalApp = app
+                }
             }
         }
     }

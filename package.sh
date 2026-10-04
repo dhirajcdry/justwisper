@@ -11,11 +11,12 @@ set -euo pipefail
 cd "$(dirname "$0")"
 ./scripts/check-toolchain.sh
 
-# Build into dist/ so this NEVER clobbers the dev-signed build.sh output — an
-# ad-hoc app in the project root would break the Accessibility grant.
 DIST="dist"
-rm -rf "$DIST"; mkdir -p "$DIST"
-APP="$DIST/justwisper.app"
+mkdir -p "$DIST"
+STAGING="$(mktemp -d "${TMPDIR:-/tmp}/justwisper-package.XXXXXX")"
+cleanup() { rm -rf "$STAGING"; }
+trap cleanup EXIT
+APP="$STAGING/justwisper.app"
 BIN_NAME="Wispr"
 CONFIG="release"
 VERSION="$(/usr/libexec/PlistBuddy -c "Print :CFBundleShortVersionString" Resources/Info.plist)"
@@ -53,12 +54,12 @@ done
 codesign --force --sign - "$APP"
 
 echo "==> Building ${DMG}..."
-STAGING="$(mktemp -d)"
-cp -R "$APP" "$STAGING/"
-ln -s /Applications "$STAGING/Applications"
+DMG_STAGING="$(mktemp -d "${TMPDIR:-/tmp}/justwisper-dmg.XXXXXX")"
+trap 'rm -rf "$STAGING" "$DMG_STAGING"' EXIT
+cp -R "$APP" "$DMG_STAGING/"
+ln -s /Applications "$DMG_STAGING/Applications"
 rm -f "$DMG"
-hdiutil create -volname "justwisper" -srcfolder "$STAGING" -ov -format UDZO "$DMG" >/dev/null
-rm -rf "$STAGING"
+hdiutil create -volname "justwisper" -srcfolder "$DMG_STAGING" -ov -format UDZO "$DMG" >/dev/null
 
 echo
 echo "==> Done → ${DMG} ($(du -h "$DMG" | cut -f1))"

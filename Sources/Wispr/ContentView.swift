@@ -17,7 +17,6 @@ struct ContentView: View {
                     case .dictionary: DictionaryView(model: model)
                     case .snippets: SnippetsView(model: model)
                     case .settings: SettingsView(model: model)
-                    default: PlaceholderView(model: model, screen: model.nav)
                     }
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)

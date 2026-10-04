@@ -9,17 +9,16 @@ To build, use an Apple Silicon Mac with **Swift 6.2+ / Xcode 26+** and a macOS v
 ```bash
 git clone https://github.com/dhirajcdry/justwisper.git
 cd justwisper
-./setup-signing.sh  # optional, once: stable local signing across rebuilds
 ./build.sh
-open ./justwisper.app
+open /Applications/justwisper.app
 ```
 
-Without the local signing setup, builds fall back to ad-hoc signing and macOS may require you to re-enable Microphone/Accessibility after a rebuild. The local identity is not Apple Developer ID signing or notarization.
+`./build.sh` installs directly to `/Applications/justwisper.app` with password-free ad-hoc signing. macOS may require you to re-enable Microphone/Accessibility after a rebuild. To opt into stable signing, run `./setup-signing.sh` once, then build with `WISPR_SIGN_IDENTITY="Wispr Dev" ./build.sh`. The local identity is not Apple Developer ID signing or notarization.
 
 For diagnostic output, quit any running copy and launch the executable directly:
 
 ```bash
-./justwisper.app/Contents/MacOS/Wispr
+/Applications/justwisper.app/Contents/MacOS/Wispr
 ```
 
 Older builds logged dictated text. Current builds log word counts/timings, but diagnostic errors can still include identifying context. Use non-sensitive examples and redact anything private before sharing output.
@@ -29,13 +28,13 @@ Older builds logged dictated text. Current builds log word counts/timings, but d
 ```bash
 swift test
 swift build -c release
-./scripts/smoke-dictation.sh # optional: local synthetic speech + cached Base model; needs FFmpeg
+./scripts/smoke-dictation.sh # optional: local synthetic speech + cached Small model; needs FFmpeg
 ```
 
 The default suite covers hotkey gestures, model-cache selection, and preview decoding settings. The hardware/model and screenshot tests are opt-in:
 
 ```bash
-# Requires an already downloaded Base model. Uses synthetic silence, no microphone.
+# Requires an already downloaded Small model. Uses synthetic silence, no microphone.
 # Tokenizer files may download once if the new app-managed cache is empty.
 WISPR_MODEL_SMOKE=1 swift test --filter EngineSmokeTests
 

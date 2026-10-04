@@ -23,7 +23,34 @@ struct Dictation: Identifiable, Codable, Equatable {
     let duration: Double
     var latency: Double = 0        // stop → text ready, seconds
     var appName: String? = nil     // where it landed, for insights
-    var wordCount: Int { text.split(whereSeparator: { $0 == " " || $0 == "\n" }).count }
+    // Count once per record, not every waveform tick and analytics redraw.
+    let wordCount: Int
+
+    init(id: UUID = UUID(), text: String, date: Date, duration: Double,
+         latency: Double = 0, appName: String? = nil) {
+        self.id = id
+        self.text = text
+        self.date = date
+        self.duration = duration
+        self.latency = latency
+        self.appName = appName
+        self.wordCount = text.split(whereSeparator: { $0 == " " || $0 == "\n" }).count
+    }
+
+    // Keep the existing history format; derive the cache when loading old records.
+    private enum CodingKeys: String, CodingKey {
+        case id, text, date, duration, latency, appName
+    }
+
+    init(from decoder: Decoder) throws {
+        let values = try decoder.container(keyedBy: CodingKeys.self)
+        self.init(id: try values.decode(UUID.self, forKey: .id),
+                  text: try values.decode(String.self, forKey: .text),
+                  date: try values.decode(Date.self, forKey: .date),
+                  duration: try values.decode(Double.self, forKey: .duration),
+                  latency: try values.decodeIfPresent(Double.self, forKey: .latency) ?? 0,
+                  appName: try values.decodeIfPresent(String.self, forKey: .appName))
+    }
 }
 
 enum Screen: String, CaseIterable {
@@ -56,7 +83,7 @@ final class AppModel: ObservableObject {
     @Published var transcript: String = ""
     @Published var logLines: [String] = []
     @Published var autoPaste: Bool = true
-    @Published var modelName: String = "base.en" {
+    @Published var modelName: String = "small.en" {
         didSet { defaults.set(modelName, forKey: "modelName") }
     }
     @Published var accessibilityGranted: Bool = false
@@ -872,6 +899,7 @@ final class AppModel: ObservableObject {
     // MARK: - Waveform
 
     private func pushLevel(_ value: Float) {
+        guard isRecording else { return } // Ignore queued callbacks after stop.
         level = value
         var next = levels
         next.removeFirst()
@@ -897,7 +925,8 @@ final class AppModel: ObservableObject {
     }
 
     func refreshMic() {
-        micGranted = AVCaptureDevice.authorizationStatus(for: .audio) == .authorized
+        let granted = AVCaptureDevice.authorizationStatus(for: .audio) == .authorized
+        if micGranted != granted { micGranted = granted }
     }
 
     /// Trigger the system microphone prompt (first run / onboarding).
