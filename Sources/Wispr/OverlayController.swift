@@ -160,17 +160,36 @@ final class OverlayController {
     /// under the pointer. Never fights an in-progress drag.
     private func position() {
         guard let panel, !isDragging else { return }
-        let size = panel.frame.size
-        if let origin = savedOrigin(for: size) {
-            panel.setFrameOrigin(origin)
-            return
-        }
-        let screen = screenUnderMouse() ?? NSScreen.main
-        guard let screen else { return }
+        if let origin = origin(for: panel.frame.size) { panel.setFrameOrigin(origin) }
+    }
+
+    /// Where a panel of `size` goes: the saved spot (clamped onto a screen) or
+    /// the bottom-center of the screen under the pointer.
+    private func origin(for size: NSSize) -> NSPoint? {
+        if let origin = savedOrigin(for: size) { return origin }
+        guard let screen = screenUnderMouse() ?? NSScreen.main else { return nil }
         let visibleFrame = screen.visibleFrame
-        let x = visibleFrame.midX - size.width / 2
-        let y = visibleFrame.minY + 12
-        panel.setFrameOrigin(NSPoint(x: x, y: y))
+        return NSPoint(x: visibleFrame.midX - size.width / 2, y: visibleFrame.minY + 12)
+    }
+
+    /// Where the recording bar's visible content would sit right now (its panel
+    /// minus the shadow margin) — the spot the idle indicator anchors to.
+    func barContentFrame() -> NSRect? {
+        guard let model else { return nil }
+        let content = model.flowStyle.contentSize
+        let size = NSSize(width: content.width + 60, height: content.height + 60)
+        guard let origin = origin(for: size) else { return nil }
+        return NSRect(origin: origin, size: size).insetBy(dx: 30, dy: 30)
+    }
+
+    /// Move the bar so its content's bottom-center is at `point` (the idle
+    /// indicator was dragged there). Persisted like a bar drag.
+    func anchorBar(bottomCenter point: NSPoint) {
+        guard let model else { return }
+        let content = model.flowStyle.contentSize
+        defaults.set(Double(point.x - content.width / 2 - 30), forKey: originXKey)
+        defaults.set(Double(point.y - 30), forKey: originYKey)
+        if visible { position() }
     }
 
     /// The saved origin, clamped so the panel always lands fully on some screen

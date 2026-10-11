@@ -123,6 +123,10 @@ final class AppModel: ObservableObject {
     @Published var voiceCommands: Bool { didSet { defaults.set(voiceCommands, forKey: "voiceCommands") } }
     @Published var formatMode: FormatMode { didSet { defaults.set(formatMode.rawValue, forKey: "formatMode") } }
     @Published var soundCues: Bool { didSet { defaults.set(soundCues, forKey: "soundCues") } }
+    /// The small always-on mark where the bar appears (Settings ▸ Overlay).
+    @Published var showIdleIndicator: Bool {
+        didSet { defaults.set(showIdleIndicator, forKey: "showIdleIndicator"); syncOverlay() }
+    }
     @Published var aiStatus: AIFormatter.Availability = .notSupported
 
     // The overlay's look (Galley/Column/Ticker/Caption). syncOverlay() applies a
@@ -155,6 +159,7 @@ final class AppModel: ObservableObject {
     private let engine: WhisperEngine
     private let hotkey = HotkeyMonitor()
     private let overlay = OverlayController()
+    private let indicator = IdleIndicatorController()
     private let focus = FocusTracker()
     private var hasStarted = false
     private var recordingStart = Date()
@@ -182,6 +187,7 @@ final class AppModel: ObservableObject {
         removeFillers = d.object(forKey: "removeFillers") as? Bool ?? true
         voiceCommands = d.object(forKey: "voiceCommands") as? Bool ?? true
         soundCues = d.object(forKey: "soundCues") as? Bool ?? true
+        showIdleIndicator = d.object(forKey: "showIdleIndicator") as? Bool ?? true
         formatMode = FormatMode(rawValue: d.string(forKey: "formatMode") ?? "") ?? .auto
         flowStyle = FlowBarStyle(stored: d.string(forKey: "flowStyle") ?? "") ?? .galley
         hasOnboarded = d.bool(forKey: "hasOnboarded")
@@ -338,6 +344,7 @@ final class AppModel: ObservableObject {
         refreshAccessibility(prompt: false)
         refreshMic()
         overlay.configure(model: self)
+        indicator.configure(model: self, overlay: overlay)
         focus.start()
         startPermissionWatch()
         Task { await refreshAIStatus() }
@@ -404,9 +411,31 @@ final class AppModel: ObservableObject {
         switch state {
         case .recording, .transcribing, .formatting, .landed, .cancelled, .preview, .notice:
             overlay.show()
+            indicator.hide()
         default:
             overlay.hide()
+            // The idle mark holds the bar's spot whenever the bar is away.
+            if showIdleIndicator && hasStarted { indicator.show() } else { indicator.hide() }
         }
+        indicator.reposition()
+    }
+
+    /// What the idle mark shows: still loading, needs attention, or ready.
+    var indicatorStatus: IndicatorStatus {
+        if case .error = state { return .attention }
+        if !accessibilityGranted || !micGranted { return .attention }
+        if state == .loading { return .loading }
+        return .ready
+    }
+
+    /// A click on the idle mark starts a hands-free take — tap Right ⌥ (or ✓)
+    /// to stop, exactly like a double-tap.
+    func startHandsFreeFromIndicator() {
+        beginRecording()
+        guard isRecording else { return }
+        hotkey.latch()
+        handsFree = true
+        log("Hands-free on (from the indicator) — tap Right ⌥ to stop.")
     }
 
     // MARK: - Recording
@@ -1015,11 +1044,16 @@ final class AppModel: ObservableObject {
     func overlayDragStep() { overlay.dragStep() }
     func endOverlayDrag() {
         overlay.commitDrag()
-        objectWillChange.send()   // refresh the Reset button in Settings
+        overlayPositionChanged()
     }
     func resetOverlayPosition() {
         overlay.resetPosition()
-        objectWillChange.send()
+        overlayPositionChanged()
+    }
+    /// The bar's spot moved (bar or idle mark dragged, or reset).
+    func overlayPositionChanged() {
+        indicator.reposition()
+        objectWillChange.send()   // refresh the Reset button in Settings
     }
     var hasCustomOverlayPosition: Bool { overlay.hasCustomPosition }
 

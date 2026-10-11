@@ -75,6 +75,16 @@ struct SettingsView: View {
                                 .focusEffectDisabled()
                                 .disabled(!model.hasCustomOverlayPosition)
                             }
+                            Divider().overlay(c.line)
+                            HStack {
+                                VStack(alignment: .leading, spacing: 3) {
+                                    Text("Idle indicator").font(F.semibold(14)).foregroundStyle(c.ink)
+                                    Text("A tiny mark where the bar appears · click it to talk")
+                                        .font(F.mono(11)).tracking(0.4).foregroundStyle(c.ink3)
+                                }
+                                Spacer()
+                                toggle($model.showIdleIndicator, c)
+                            }
                         }
                         .padding(.vertical, 16)
                     }

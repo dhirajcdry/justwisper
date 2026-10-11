@@ -84,6 +84,15 @@ final class HotkeyMonitor {
         tapReleaseTimestamp = nil
     }
 
+    /// Recording was started hands-free from elsewhere (the idle indicator):
+    /// latch, so the next tap of Right ⌥ stops it.
+    func latch() {
+        cancelPendingStop()
+        phase = .latched
+        consumeNextUp = false
+        tapReleaseTimestamp = nil
+    }
+
     private func handle(_ event: NSEvent) {
         guard event.keyCode == keyCode else { return }
         // flagsChanged exposes aggregate modifier flags, but the device mask
