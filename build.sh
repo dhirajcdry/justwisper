@@ -50,21 +50,32 @@ if compgen -G "${BIN_DIR}/"*.bundle > /dev/null; then
     cp -R "${BIN_DIR}/"*.bundle "${APP_PATH}/Contents/Resources/"
 fi
 
-# Local builds use ad-hoc signing so they never require a keychain password.
-# Opt into an available stable identity with WISPR_SIGN_IDENTITY="Wispr Dev".
-SIGN_ID="${WISPR_SIGN_IDENTITY:--}"
+# Reuse one stable local identity so updates retain macOS privacy permissions.
+# Never silently fall back to ad-hoc signing.
+SIGN_ID="${WISPR_SIGN_IDENTITY:-justwisper Local}"
+KEYCHAIN="${HOME}/Library/Keychains/justwisper-local.keychain-db"
+PASSWORD_FILE="${PWD}/.signing/keychain-password"
+SIGN_ARGS=(--force --sign "${SIGN_ID}")
 if [ "${SIGN_ID}" = "-" ]; then
-    echo "==> Ad-hoc signing (no keychain password required)..."
-else
-    echo "==> Code signing with identity ${SIGN_ID}..."
+    echo "Ad-hoc signing is disabled for installed builds because it resets permissions." >&2
+    exit 1
 fi
+if [ "${SIGN_ID}" = "justwisper Local" ]; then
+    if [ ! -f "${KEYCHAIN}" ] || [ ! -f "${PASSWORD_FILE}" ]; then
+        echo "Run ./setup-signing.sh once to configure the stable local signing identity." >&2
+        exit 1
+    fi
+    security unlock-keychain -p "$(cat "${PASSWORD_FILE}")" "${KEYCHAIN}"
+    SIGN_ARGS+=(--keychain "${KEYCHAIN}")
+fi
+echo "==> Signing with stable identity ${SIGN_ID}..."
 
 # Sign nested resource bundles first, then the app (avoids --deep choking on
 # resource bundles that have no Info.plist).
 for b in "${APP_PATH}/Contents/Resources/"*.bundle; do
-    [ -e "$b" ] && codesign --force --sign "${SIGN_ID}" "$b" >/dev/null 2>&1 || true
+    [ -e "$b" ] && codesign "${SIGN_ARGS[@]}" "$b" >/dev/null 2>&1 || true
 done
-codesign --force --sign "${SIGN_ID}" "${APP_PATH}"
+codesign "${SIGN_ARGS[@]}" "${APP_PATH}"
 
 # Explicit stable signing must not silently fall back to ad-hoc.
 if [ "${SIGN_ID}" != "-" ]; then

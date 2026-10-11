@@ -31,7 +31,7 @@
 ### Local installation
 
 - Install builds into `/Applications/justwisper.app`, replacing the prior version after signing succeeds.
-- Use password-free ad-hoc signing by default; stable signing remains an explicit option.
+- Reuse a stable local signing identity with automatic keychain unlock; refuse ad-hoc signing for installed builds so updates retain permissions.
 - Clean up temporary app bundles after builds and release packaging.
 
 ### Project and presentation

@@ -9,11 +9,12 @@ To build, use an Apple Silicon Mac with **Swift 6.2+ / Xcode 26+** and a macOS v
 ```bash
 git clone https://github.com/dhirajcdry/justwisper.git
 cd justwisper
+./setup-signing.sh  # once per Mac
 ./build.sh
 open /Applications/justwisper.app
 ```
 
-`./build.sh` installs directly to `/Applications/justwisper.app` with password-free ad-hoc signing. macOS may require you to re-enable Microphone/Accessibility after a rebuild. To opt into stable signing, run `./setup-signing.sh` once, then build with `WISPR_SIGN_IDENTITY="Wispr Dev" ./build.sh`. The local identity is not Apple Developer ID signing or notarization.
+`./build.sh` installs directly to `/Applications/justwisper.app` using the stable `justwisper Local` identity created by `./setup-signing.sh`. Its generated password is kept in ignored, owner-only `.signing/` storage for automatic unlock. Keep that file and the dedicated keychain; do not recreate the identity for each build. Changing from an earlier signing identity requires one new permission grant. Installed builds refuse ad-hoc signing. This local identity is not Apple Developer ID signing or notarization.
 
 For diagnostic output, quit any running copy and launch the executable directly:
 

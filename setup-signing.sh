@@ -4,8 +4,8 @@
 set -euo pipefail
 cd "$(dirname "$0")"
 umask 077
-IDENTITY="Wispr Dev"
-KEYCHAIN="${HOME}/Library/Keychains/wispr-codesign.keychain-db"
+IDENTITY="justwisper Local"
+KEYCHAIN="${HOME}/Library/Keychains/justwisper-local.keychain-db"
 PASSWORD_FILE="${PWD}/.signing/keychain-password"
 WORK="$(mktemp -d)"
 trap 'rm -rf "$WORK"' EXIT
@@ -30,7 +30,7 @@ distinguished_name = dn
 x509_extensions = v3
 prompt = no
 [ dn ]
-CN = Wispr Dev
+CN = justwisper Local
 [ v3 ]
 basicConstraints = critical,CA:FALSE
 keyUsage = critical,digitalSignature
