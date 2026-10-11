@@ -51,7 +51,7 @@ Speech recognition runs **on your Mac** using [WhisperKit](https://github.com/ar
 | --- | --- |
 | ![Galley recording overlay with sample words.](site/assets/screenshots/overlay-galley.png) | ![Column recording overlay with sample words.](site/assets/screenshots/overlay-column.png) |
 
-Ticker and Proof are also available in Settings. All four styles can be repositioned.
+Ticker and Caption (just the floating words, no bar) are also available in Settings. All four styles can be repositioned.
 
 *These images render the real SwiftUI views with fictional data. No personal dictation history is included. [How the assets are made](docs/ASSETS.md).*
 
@@ -66,7 +66,7 @@ Ticker and Proof are also available in Settings. All four styles can be repositi
 - **Spoken shortcuts.** Expand a short trigger into a saved phrase or multi-line snippet.
 - **Formatting controls.** Rule-based cleanup, voice commands, and per-app formatting modes. Optional on-device AI polish uses Apple Intelligence on supported macOS 26+ Macs and is off by default.
 - **Recoverable cancellation.** Esc cancels; the short undo window can recover an accidental cancellation.
-- **Four overlay styles.** Galley, Column, Ticker, and Proof, with a draggable position.
+- **Four overlay styles.** Galley, Column, Ticker, and Caption, with a draggable position.
 
 ## Get started
 
@@ -123,13 +123,14 @@ Found a rough edge? [Report it](https://github.com/dhirajcdry/justwisper/issues/
 ```bash
 git clone https://github.com/dhirajcdry/justwisper.git
 cd justwisper
+./setup-signing.sh  # once per Mac
 ./build.sh
 open /Applications/justwisper.app
 ```
 
-`./build.sh` signs and replaces `/Applications/justwisper.app`. It stops any running copy before installation and leaves no app bundle in the project folder. Local builds use password-free ad-hoc signing; macOS may require permissions again after a rebuild. Set `WISPR_SIGN_IDENTITY="Wispr Dev"` to opt into a configured stable signing identity.
+`./build.sh` signs and replaces `/Applications/justwisper.app`. It stops any running copy before installation and leaves no app bundle in the project folder. Local builds reuse the `justwisper Local` signing identity. Its generated keychain password stays in ignored, owner-only `.signing/` storage, so future builds unlock it automatically. Installed builds refuse ad-hoc signing to prevent permission resets.
 
-Building requires **Swift 6.2+ (Xcode 26+)** because of the locked dependencies; running the app still targets macOS 14+. To retain local permissions across rebuilds, run `./setup-signing.sh` once and use `WISPR_SIGN_IDENTITY="Wispr Dev" ./build.sh`. This creates a local development identity; it is not Apple Developer ID signing or notarization.
+Building requires **Swift 6.2+ (Xcode 26+)** because of the locked dependencies; running the app still targets macOS 14+. Run `./setup-signing.sh` once to configure stable local signing, then use `./build.sh` for updates. This creates a local development identity; it is not Apple Developer ID signing or notarization.
 
 ```bash
 swift test                 # regression suite; no microphone required

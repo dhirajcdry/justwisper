@@ -51,11 +51,14 @@ struct Palette {
 enum F {
     static func extrabold(_ s: CGFloat) -> Font { .custom("HankenGrotesk-Regular_ExtraBold", size: s) }
     static func bold(_ s: CGFloat) -> Font { .custom("HankenGrotesk-Regular_Bold", size: s) }
-    static func semibold(_ s: CGFloat) -> Font { .custom("HankenGrotesk-Regular_SemiBold", size: s) }
-    static func medium(_ s: CGFloat) -> Font { .custom("HankenGrotesk-Regular_Medium", size: s) }
+    static let semiboldName = "HankenGrotesk-Regular_SemiBold"
+    static func semibold(_ s: CGFloat) -> Font { .custom(semiboldName, size: s) }
+    static let mediumName = "HankenGrotesk-Regular_Medium"
+    static func medium(_ s: CGFloat) -> Font { .custom(mediumName, size: s) }
     static func regular(_ s: CGFloat) -> Font { .custom("HankenGrotesk-Regular", size: s) }
 
     static func mono(_ s: CGFloat) -> Font { .custom("JetBrainsMono-Regular", size: s) }
-    static func monoMed(_ s: CGFloat) -> Font { .custom("JetBrainsMono-Medium", size: s) }
+    static let monoMedName = "JetBrainsMono-Medium"
+    static func monoMed(_ s: CGFloat) -> Font { .custom(monoMedName, size: s) }
     static func monoSemi(_ s: CGFloat) -> Font { .custom("JetBrainsMono-SemiBold", size: s) }
 }

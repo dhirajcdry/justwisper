@@ -109,7 +109,11 @@ final class AppModel: ObservableObject {
     // Model loading + live transcription.
     @Published var downloadProgress: Double?   // 0...1 while downloading, nil otherwise
     @Published var modelReady: Bool = false
-    @Published var partialText: String = ""     // live words while speaking
+    @Published var partialText: String = "" {   // live words while speaking
+        didSet { live.ingest(partialText) }    // a repeat pass is what settles words
+    }
+    /// `partialText` aligned pass-to-pass, so the flow bar animates only changes.
+    @Published private(set) var live = LiveTranscript()
     @Published var handsFree: Bool = false      // hands-free (double-tap) latch engaged
     private var streamTask: Task<Void, Never>?
 
@@ -121,7 +125,7 @@ final class AppModel: ObservableObject {
     @Published var soundCues: Bool { didSet { defaults.set(soundCues, forKey: "soundCues") } }
     @Published var aiStatus: AIFormatter.Availability = .notSupported
 
-    // The overlay's look (Galley/Column/Ticker/Proof). syncOverlay() applies a
+    // The overlay's look (Galley/Column/Ticker/Caption). syncOverlay() applies a
     // change live if the bar happens to be on screen.
     @Published var flowStyle: FlowBarStyle {
         didSet {
@@ -179,7 +183,7 @@ final class AppModel: ObservableObject {
         voiceCommands = d.object(forKey: "voiceCommands") as? Bool ?? true
         soundCues = d.object(forKey: "soundCues") as? Bool ?? true
         formatMode = FormatMode(rawValue: d.string(forKey: "formatMode") ?? "") ?? .auto
-        flowStyle = FlowBarStyle(rawValue: d.string(forKey: "flowStyle") ?? "") ?? .galley
+        flowStyle = FlowBarStyle(stored: d.string(forKey: "flowStyle") ?? "") ?? .galley
         hasOnboarded = d.bool(forKey: "hasOnboarded")
         vocab = preview ? [] : (Persist.load([VocabEntry].self, from: "dictionary.json") ?? [])
         snippets = preview ? [] : (Persist.load([SnippetEntry].self, from: "snippets.json") ?? [])
@@ -232,6 +236,9 @@ final class AppModel: ObservableObject {
     }
 
     /// True during the brief post-cancel window where the take can be recovered.
+    /// Landed / cancelled / notice — the brief bars shown after (or instead of) a take.
+    var isTransientBar: Bool { landedAppName != nil || isCancelled || noticeText != nil }
+
     var isCancelled: Bool {
         if case .cancelled = state { return true }
         return false
@@ -579,15 +586,9 @@ final class AppModel: ObservableObject {
                 return
             }
             partialText = ""
-            switch insertionResult {
-            case .inserted:
-                showLanded(target?.localizedName ?? "the destination app")
-            case .pasteRequested:
-                showNotice("Paste sent to \(target?.localizedName ?? "the destination app"). If it didn't appear, copy from History.",
-                           returnTo: .idle, playSound: false)
-            case .failed(let message):
-                showNotice(message, returnTo: .idle)
-            case nil:
+            if let insertionResult {
+                presentInsertionResult(insertionResult, appName: target?.localizedName ?? "the destination app")
+            } else {
                 state = .idle
             }
         }
@@ -723,10 +724,26 @@ final class AppModel: ObservableObject {
     /// "⌘V to paste anywhere" hint.
     @Published var landedCopied = false
 
-    private func showLanded(_ appName: String) {
+    private(set) var deliveryConfirmed = true
+
+    /// Sending a paste shortcut is a normal delivery path, not an error. Keep
+    /// its wording distinct from verified insertion without alarming the user.
+    func presentInsertionResult(_ result: TextInjector.Result, appName: String) {
+        switch result {
+        case .inserted:
+            showLanded(appName, confirmed: true)
+        case .pasteRequested:
+            showLanded(appName, confirmed: false)
+        case .failed(let message):
+            showNotice(message, returnTo: .idle)
+        }
+    }
+
+    private func showLanded(_ appName: String, confirmed: Bool = true) {
+        deliveryConfirmed = confirmed
         landedCopied = false
         state = .landed(appName)          // didSet → overlay stays up
-        armTransientDismiss(after: 3.0)
+        armTransientDismiss(after: confirmed ? 3.0 : 1.5)
     }
 
     /// Auto-dismiss a transient bar after a delay — unless the pointer is over
@@ -800,7 +817,7 @@ final class AppModel: ObservableObject {
     private var lastInsertion: (app: NSRunningApplication?, text: String)?
 
     /// Use the app captured when recording stopped, even if focus changed
-    /// while decoding. Only the AX path can confirm insertion succeeded.
+    /// while decoding. `.inserted` means the app actually read the pasted text.
     private func paste(_ text: String, into target: NSRunningApplication?) async -> TextInjector.Result {
         refreshAccessibility(prompt: false)
         guard accessibilityGranted else {
@@ -838,14 +855,7 @@ final class AppModel: ObservableObject {
             let result = await paste(text, into: target)
             // Don't replace an overlay if a new recording started in the meantime.
             guard state == .idle else { return }
-            switch result {
-            case .inserted:
-                showLanded(target?.localizedName ?? "the destination app")
-            case .pasteRequested:
-                showNotice("Paste requested. If it didn't appear, copy from History.", returnTo: .idle, playSound: false)
-            case .failed(let message):
-                showNotice(message, returnTo: .idle)
-            }
+            presentInsertionResult(result, appName: target?.localizedName ?? "the destination app")
         }
     }
 

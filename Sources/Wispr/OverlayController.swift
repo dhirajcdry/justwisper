@@ -72,6 +72,15 @@ final class OverlayController {
         // on recording → transcribing → formatting transitions).
         guard !visible else { panel?.orderFrontRegardless(); return }
         visible = true
+        // Re-assert "on every desktop" before each appearance. A long-lived panel
+        // was seen pinned to a single Space (likely after sleep/display changes
+        // re-homed it), so the bar silently showed on only one desktop.
+        // Toggling forces the window server to re-apply it; the panel is hidden here.
+        if let panel {
+            let behavior = panel.collectionBehavior
+            panel.collectionBehavior = []
+            panel.collectionBehavior = behavior
+        }
         panel?.alphaValue = 0
         panel?.orderFrontRegardless()
         NSAnimationContext.runAnimationGroup { ctx in
@@ -126,13 +135,14 @@ final class OverlayController {
     /// uses the compact pill, whatever the recording style.
     private func panelSize(for model: AppModel) -> NSSize {
         // The transient bars (landed / cancelled / notice) match the recording
-        // style's height so nothing jumps: Ticker → its slim size, everything
-        // else → the compact galley pill.
-        let isTransient = model.landedAppName != nil || model.noticeText != nil || model.isCancelled
+        // style's height so nothing jumps: Ticker → its slim size, Caption → its
+        // own chromeless line, everything else → the compact galley pill.
         let content: CGSize
-        if isTransient {
-            content = model.flowStyle == .ticker ? FlowBarStyle.ticker.contentSize
-                                                 : FlowBarStyle.galley.contentSize
+        if model.isTransientBar {
+            switch model.flowStyle {
+            case .ticker, .caption: content = model.flowStyle.contentSize   // keep their own shape
+            default: content = FlowBarStyle.galley.contentSize
+            }
         } else {
             content = model.flowStyle.contentSize
         }

@@ -145,7 +145,7 @@ struct SettingsView: View {
     // MARK: - Overlay style cards
 
     /// One selectable overlay-style card: a tiny schematic of the design
-    /// variant (Galley/Column/Ticker/Proof) + its name.
+    /// variant (Galley/Column/Ticker/Caption) + its name.
     private func styleCard(_ style: FlowBarStyle, _ c: Palette) -> some View {
         let selected = model.flowStyle == style
         return Button {
@@ -216,23 +216,14 @@ struct SettingsView: View {
             .padding(.horizontal, 8)
             .frame(width: 82, height: 16)
             .background(RoundedRectangle(cornerRadius: 5).fill(Color(hex: 0x1A1712)))
-        case .proof:
-            // Card where the refining word is underlined.
-            VStack(alignment: .leading, spacing: 5) {
-                Capsule().fill(c.ink3).frame(width: 40, height: 3)
-                HStack(spacing: 3) {
-                    Capsule().fill(c.ink3).frame(width: 18, height: 3)
-                    VStack(spacing: 2) {
-                        Capsule().fill(c.ink3).frame(width: 14, height: 3)
-                        Capsule().fill(c.sig).frame(width: 14, height: 2)
-                    }
-                }
-                Capsule().fill(c.ink3).frame(width: 30, height: 3)
+        case .caption:
+            // Bare words, no chrome.
+            HStack(spacing: 4) {
+                Capsule().fill(c.ink2).frame(width: 22, height: 3.5)
+                Capsule().fill(c.ink2).frame(width: 16, height: 3.5)
+                Capsule().fill(c.sig).frame(width: 13, height: 3.5)
             }
-            .padding(8)
-            .frame(width: 64, height: 42, alignment: .topLeading)
-            .background(RoundedRectangle(cornerRadius: 6).fill(c.panel))
-            .overlay(RoundedRectangle(cornerRadius: 6).strokeBorder(c.ink.opacity(0.7), lineWidth: 1))
+            .frame(width: 82, height: 24)
         }
     }
 

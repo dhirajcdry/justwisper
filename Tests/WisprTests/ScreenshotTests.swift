@@ -48,7 +48,9 @@ final class ScreenshotTests: XCTestCase {
         }
         model.state = .recording
         model.elapsed = 7
-        model.partialText = "More time making things."
+        model.partialText = "More time making"         // a second pass confirms these…
+        model.partialText = "More time making"
+        model.partialText = "More time making things." // …and the newest word is still tentative
         model.levels = (0..<AppModel.waveformBars).map { Float(0.12 + abs(sin(Double($0) * 0.67)) * 0.7) }
         model.level = 0.65
         for style in FlowBarStyle.allCases {
@@ -75,7 +77,7 @@ final class ScreenshotTests: XCTestCase {
         host.frame = NSRect(origin: .zero, size: size)
         window.orderBack(nil)
         host.layoutSubtreeIfNeeded()
-        RunLoop.main.run(until: Date().addingTimeInterval(0.25))
+        RunLoop.main.run(until: Date().addingTimeInterval(0.6))   // let live words finish arriving
         // SwiftUI caches glyphs in drawing layers at the window's screen
         // scale. Refresh only those layers at export resolution. Image layers
         // (including SF Symbols) must retain their source contents.
