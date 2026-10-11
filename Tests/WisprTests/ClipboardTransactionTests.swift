@@ -70,4 +70,32 @@ final class ClipboardTransactionTests: XCTestCase {
         XCTAssertEqual(board.changeCount, restoredCount)
         XCTAssertFalse(transaction.stillOwnsClipboard)
     }
+
+    @MainActor
+    func testKnowsWhenAnAppReadTheTranscript() async throws {
+        let board = NSPasteboard.withUniqueName()
+        defer { board.releaseGlobally() }
+        board.setString("original", forType: .string)
+        let transaction = try XCTUnwrap(ClipboardTransaction.begin(text: "dictation", on: board))
+        XCTAssertFalse(transaction.wasRead, "Writing the promise is not a paste")
+        let unread = await transaction.waitUntilRead(timeout: .milliseconds(50))
+        XCTAssertFalse(unread)
+        XCTAssertEqual(board.string(forType: .string), "dictation")
+        let read = await transaction.waitUntilRead(timeout: .milliseconds(50))
+        XCTAssertTrue(read)
+        transaction.restoreIfUnchanged()
+        XCTAssertEqual(board.string(forType: .string), "original")
+    }
+
+    @MainActor
+    func testAnUnreadTranscriptStaysOnTheClipboard() throws {
+        let board = NSPasteboard.withUniqueName()
+        defer { board.releaseGlobally() }
+        board.setString("original", forType: .string)
+        let transaction = try XCTUnwrap(ClipboardTransaction.begin(text: "dictation", on: board))
+        transaction.keepTranscript()
+        XCTAssertEqual(board.string(forType: .string), "dictation")
+        transaction.restoreIfUnchanged()
+        XCTAssertEqual(board.string(forType: .string), "dictation", "Kept text is final")
+    }
 }
