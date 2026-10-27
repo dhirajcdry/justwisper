@@ -64,28 +64,30 @@ final class OverlayController {
 
     func show() {
         guard let model else { return }
-        if panel == nil { panel = makePanel(model: model) }
         hideToken += 1            // cancel any in-flight hide completion
-        resizeForCurrentStyle()
-        position()
         // Already up → just keep it frontmost; don't re-animate (avoids flicker
         // on recording → transcribing → formatting transitions).
-        guard !visible else { panel?.orderFrontRegardless(); return }
-        visible = true
-        // Re-assert "on every desktop" before each appearance. A long-lived panel
-        // was seen pinned to a single Space (likely after sleep/display changes
-        // re-homed it), so the bar silently showed on only one desktop.
-        // Toggling forces the window server to re-apply it; the panel is hidden here.
-        if let panel {
-            let behavior = panel.collectionBehavior
-            panel.collectionBehavior = []
-            panel.collectionBehavior = behavior
+        if visible, panel != nil {
+            resizeForCurrentStyle()
+            position()
+            panel?.orderFrontRegardless()
+            return
         }
-        panel?.alphaValue = 0
-        panel?.orderFrontRegardless()
+        // Fresh panel for every appearance. A long-lived panel gets re-homed by
+        // the window server onto a single Space (seen via CGSCopySpacesForWindows:
+        // bar on [3] only while the idle pill was on all three) and keeps
+        // `.canJoinAllSpaces` in name only — re-setting the flag doesn't undo it.
+        // A newly created window always joins every Space.
+        panel?.orderOut(nil)
+        let panel = makePanel(model: model)
+        self.panel = panel
+        visible = true
+        position()
+        panel.alphaValue = 0
+        panel.orderFrontRegardless()
         NSAnimationContext.runAnimationGroup { ctx in
             ctx.duration = 0.22
-            panel?.animator().alphaValue = 1
+            panel.animator().alphaValue = 1
         }
     }
 
@@ -115,6 +117,7 @@ final class OverlayController {
             backing: .buffered,
             defer: false
         )
+        panel.isReleasedWhenClosed = false
         panel.isFloatingPanel = true
         panel.level = .statusBar
         panel.backgroundColor = .clear
