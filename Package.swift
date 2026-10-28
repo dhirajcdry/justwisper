@@ -7,7 +7,7 @@ let package = Package(
         .macOS(.v14)
     ],
     dependencies: [
-        .package(url: "https://github.com/argmaxinc/argmax-oss-swift.git", exact: "0.18.0")
+        .package(url: "https://github.com/argmaxinc/argmax-oss-swift.git", exact: "1.1.0")
     ],
     targets: [
         .executableTarget(
